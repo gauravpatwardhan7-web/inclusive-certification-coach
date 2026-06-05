@@ -9,7 +9,7 @@ invent skills or sources that are absent from the grounding context.
 
 import json
 from src.foundry_client import chat
-from src.knowledge import load_knowledge_base
+from src.retrieval import retrieve_as_context
 
 SYSTEM_PROMPT = """You are the Learning Path Curator in an accessibility-first \
 enterprise certification system.
@@ -46,7 +46,10 @@ No preamble. JSON only."""
 
 def curate(certification: str, role: str, accessibility_profile: str = "none") -> dict:
     """Produce a grounded, accessibility-aware learning path as a dict."""
-    knowledge_base = load_knowledge_base()
+    # Foundry IQ retrieval: pull only the chunks relevant to this request.
+    knowledge_base = retrieve_as_context(
+        f"{certification} {role} skill areas recommended study hours accessibility guidance"
+    )
     user_msg = (
         f"KNOWLEDGE BASE:\n{knowledge_base}\n\n"
         f"LEARNER REQUEST:\n"

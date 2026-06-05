@@ -8,7 +8,7 @@ question cites the source it was drawn from; nothing is invented.
 
 import json
 from src.foundry_client import chat
-from src.knowledge import load_knowledge_base
+from src.retrieval import retrieve_as_context
 
 GENERATE_PROMPT = """You are the Assessment Agent in an accessibility-first \
 enterprise certification system.
@@ -60,7 +60,7 @@ def _parse(raw: str) -> dict:
 
 def generate_assessment(certification: str, role: str, num_questions: int = 3) -> dict:
     """Produce grounded, cited practice questions."""
-    kb = load_knowledge_base()
+    kb = retrieve_as_context(f"{certification} {role} skill areas exam topics study hours")
     user_msg = (
         f"KNOWLEDGE BASE:\n{kb}\n\n"
         f"Generate {num_questions} questions for certification {certification} "

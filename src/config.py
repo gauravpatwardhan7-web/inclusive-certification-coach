@@ -24,6 +24,11 @@ class Settings:
     MODEL_DEFAULT: str = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5-mini")
     MODEL_REASONING: str = os.getenv("AZURE_OPENAI_DEPLOYMENT_REASONING", "o4-mini")
 
+    # Foundry IQ / Azure AI Search (grounded retrieval)
+    SEARCH_ENDPOINT: str = os.getenv("AZURE_SEARCH_ENDPOINT", "")
+    SEARCH_KEY: str = os.getenv("AZURE_SEARCH_KEY", "")
+    SEARCH_INDEX: str = os.getenv("AZURE_SEARCH_INDEX", "cert-guides-index")
+
     def validate(self) -> None:
         """Fail loudly at startup if required secrets are missing."""
         missing = [

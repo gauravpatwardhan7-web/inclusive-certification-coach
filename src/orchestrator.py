@@ -40,6 +40,11 @@ Output ONLY valid JSON:
 No preamble. JSON only."""
 
 
+def decide(assessment_result: dict, history: list[dict], accessibility_profile: str) -> dict:
+    """Public entry point for the orchestrator's reasoning decision."""
+    return _decide(assessment_result, history, accessibility_profile)
+
+
 def _decide(assessment_result: dict, history: list[dict], accessibility_profile: str) -> dict:
     user_msg = (
         f"ASSESSMENT RESULT:\n{json.dumps(assessment_result, indent=2)}\n\n"

@@ -8,10 +8,8 @@ invent skills or sources that are absent from the grounding context.
 """
 
 import json
-from pathlib import Path
 from src.foundry_client import chat
-
-KB_DIR = Path(__file__).resolve().parents[2] / "data" / "knowledge_base"
+from src.knowledge import load_knowledge_base
 
 SYSTEM_PROMPT = """You are the Learning Path Curator in an accessibility-first \
 enterprise certification system.
@@ -46,17 +44,9 @@ Output ONLY valid JSON in this shape:
 No preamble. JSON only."""
 
 
-def _load_knowledge_base() -> str:
-    """Concatenate all knowledge-base documents into one grounding context."""
-    docs = []
-    for path in sorted(KB_DIR.glob("*.md")):
-        docs.append(f"--- DOCUMENT: {path.name} ---\n{path.read_text()}")
-    return "\n\n".join(docs)
-
-
 def curate(certification: str, role: str, accessibility_profile: str = "none") -> dict:
     """Produce a grounded, accessibility-aware learning path as a dict."""
-    knowledge_base = _load_knowledge_base()
+    knowledge_base = load_knowledge_base()
     user_msg = (
         f"KNOWLEDGE BASE:\n{knowledge_base}\n\n"
         f"LEARNER REQUEST:\n"

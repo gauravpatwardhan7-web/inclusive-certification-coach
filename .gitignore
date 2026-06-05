@@ -1,0 +1,17 @@
+# Secrets — NEVER commit these
+.env
+*.key
+
+# Python virtual environment
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# OS / editor cruft
+.DS_Store
+.vscode/
+.idea/
+
+# Streamlit local cache
+.streamlit/secrets.toml

@@ -1,0 +1,10 @@
+# Azure Foundry / OpenAI access
+openai>=1.40.0
+azure-identity>=1.17.0
+
+# Config + data validation
+python-dotenv>=1.0.0
+pydantic>=2.7.0
+
+# Demo UI
+streamlit>=1.36.0

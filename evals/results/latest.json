@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-06-08T03:42:54.094538+00:00",
+  "run_at": "2026-06-08T04:19:14.986945+00:00",
   "suites": [
     {
       "suite": "decisions",
@@ -25,7 +25,7 @@
           ],
           "got": {
             "action": "advance",
-            "reason": "You achieved a perfect score across all skill areas and are ready to move on to the next module."
+            "reason": "Learner demonstrated mastery across all tested skill areas with a perfect score on the first attempt."
           }
         },
         {
@@ -45,7 +45,7 @@
           ],
           "got": {
             "action": "loop",
-            "reason": "You scored 33% and need to focus on Azure storage and Azure security to improve."
+            "reason": "Your score indicates you need more practice on Azure storage and security before moving on."
           }
         },
         {
@@ -60,7 +60,7 @@
           ],
           "got": {
             "action": "escalate",
-            "reason": "After three attempts without consistent improvement, targeted human support will help address persistent gaps in Azure storage and security."
+            "reason": "The learner has attempted three times without sufficient improvement and is still not ready."
           }
         },
         {
@@ -80,7 +80,7 @@
           ],
           "got": {
             "action": "loop",
-            "reason": "Learner still needs to master \u2018Implement Azure security\u2019 and with only two attempts, a supportive loop focusing on that area and lighter pacing fits their ADHD profile."
+            "reason": "You\u2019re close to passing and only missed the Azure security area, so a focused review should help you improve."
           }
         },
         {
@@ -100,7 +100,7 @@
           ],
           "got": {
             "action": "advance",
-            "reason": "You achieved a perfect score across all skill areas and are ready to move forward."
+            "reason": "You achieved a perfect score across all skill areas, showing mastery and readiness to move forward."
           }
         },
         {
@@ -115,11 +115,11 @@
           ],
           "got": {
             "action": "advance",
-            "reason": "You passed the assessment on your first try with a 75% score and demonstrated readiness to move forward."
+            "reason": "You achieved a passing score and are marked ready to progress."
           }
         }
       ],
-      "duration_s": 24.6
+      "duration_s": 34.9
     },
     {
       "suite": "groundedness",
@@ -151,7 +151,7 @@
         {
           "name": "planner_has_sessions",
           "pass": true,
-          "note": "34 sessions"
+          "note": "24 sessions"
         },
         {
           "name": "planner_skills_grounded",
@@ -184,7 +184,7 @@
           "note": "0 questions with ungrounded skill areas"
         }
       ],
-      "duration_s": 121.2
+      "duration_s": 108.8
     },
     {
       "suite": "manager",
@@ -219,7 +219,42 @@
           "note": "L-1003 status=needs_support"
         }
       ],
-      "duration_s": 9.1
+      "duration_s": 18.1
+    },
+    {
+      "suite": "accessibility",
+      "metric": "spoken_output_quality",
+      "passed": 5,
+      "total": 5,
+      "score_pct": 100,
+      "cases": [
+        {
+          "name": "non_empty",
+          "pass": true,
+          "note": "680 chars"
+        },
+        {
+          "name": "no_markdown",
+          "pass": true,
+          "note": "found markup chars: []"
+        },
+        {
+          "name": "no_percent_symbol",
+          "pass": true,
+          "note": "raw '%' present"
+        },
+        {
+          "name": "no_link_syntax",
+          "pass": true,
+          "note": "markdown link syntax present"
+        },
+        {
+          "name": "abbreviation_spelled_out",
+          "pass": true,
+          "note": "literal 'AZ-204' should be spelled out for speech"
+        }
+      ],
+      "duration_s": 14.7
     }
   ]
 }

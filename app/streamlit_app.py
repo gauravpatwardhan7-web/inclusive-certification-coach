@@ -12,12 +12,43 @@ from pathlib import Path
 # Make `src` importable when run via `streamlit run app/streamlit_app.py`.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import json as _json
 import streamlit as st
+import streamlit.components.v1 as components
 from src.agents.curator import curate
 from src.agents.study_planner import generate_study_plan
 from src.agents.assessor import generate_assessment, score_assessment
 from src.agents.manager_insights import team_insights, load_team
+from src.accessibility import to_spoken
 from src.orchestrator import decide
+
+
+def read_aloud(text: str, key: str):
+    """Client-side text-to-speech via the browser Web Speech API (no quota)."""
+    if not text:
+        return
+    safe = _json.dumps(text)
+    components.html(
+        f"""
+        <div style="font-family: sans-serif;">
+          <button onclick="speak_{key}()"
+            style="padding:6px 12px;margin-right:6px;border:1px solid #ccc;
+                   border-radius:6px;cursor:pointer;">🔊 Read aloud</button>
+          <button onclick="window.speechSynthesis.cancel()"
+            style="padding:6px 12px;border:1px solid #ccc;border-radius:6px;
+                   cursor:pointer;">⏹ Stop</button>
+        </div>
+        <script>
+          function speak_{key}() {{
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance({safe});
+            u.rate = 0.95;
+            window.speechSynthesis.speak(u);
+          }}
+        </script>
+        """,
+        height=48,
+    )
 
 st.set_page_config(page_title="Inclusive Certification Coach", page_icon="🎓", layout="wide")
 
@@ -30,6 +61,8 @@ ss.setdefault("assessment", None)
 ss.setdefault("result", None)
 ss.setdefault("decision", None)
 ss.setdefault("insights", None)
+ss.setdefault("spoken_path", "")
+ss.setdefault("spoken_rec", "")
 
 
 def log(agent: str, did: str):
@@ -55,6 +88,12 @@ with left:
         "Has ADHD; struggles to focus in long study sessions.",
         help="Used to adapt pacing, formats, and study blocks.",
     )
+    voice_mode = st.toggle(
+        "🔊 Voice / screen-reader mode",
+        value=False,
+        help="Generates a screen-reader-first spoken script for each result and "
+             "lets you play it aloud (browser text-to-speech, no audio model).",
+    )
 
     if st.button("Build my learning path", type="primary"):
         ss.trace = []
@@ -72,8 +111,15 @@ with left:
             ss.assessment = generate_assessment(cert, role, num_questions=3)
             log("Assessment Agent",
                 f"Generated {len(ss.assessment['questions'])} grounded, cited questions.")
+        ss.spoken_path = ""
+        if voice_mode:
+            with st.spinner("Accessibility Narrator preparing a spoken version..."):
+                ss.spoken_path = to_spoken("learning_path", ss.path, profile)
+                log("Accessibility Narrator",
+                    "Rendered the learning path as a screen-reader-first spoken script.")
         ss.result = None
         ss.decision = None
+        ss.spoken_rec = ""
 
     if ss.path:
         st.subheader("2 · Your accessibility-aware learning path")
@@ -81,6 +127,10 @@ with left:
             with st.expander(f"{m['skill_area']} · {m['recommended_hours']}h"):
                 st.write(f"**Accommodation:** {m['accommodation_note']}")
                 st.caption(f"Source: {m['source_id']}")
+        if ss.spoken_path:
+            with st.expander("🔊 Spoken version (screen-reader friendly)"):
+                st.write(ss.spoken_path)
+                read_aloud(ss.spoken_path, "path")
 
     if ss.study_plan:
         sp = ss.study_plan
@@ -120,6 +170,10 @@ with left:
                 ss.decision = decide(ss.result, [{"attempt": 1, "score_pct": ss.result["score_pct"]}], profile)
                 log("Orchestrator (reasoning)",
                     f"Decision: {ss.decision['action'].upper()} — {ss.decision['reason']}")
+                if voice_mode:
+                    ss.spoken_rec = to_spoken("recommendation", ss.decision, profile)
+                    log("Accessibility Narrator",
+                        "Rendered the recommendation as a spoken script.")
 
     if ss.decision:
         st.subheader("5 · Recommendation")
@@ -132,6 +186,10 @@ with left:
                 st.write("**Focus next on:** " + ", ".join(ss.decision["focus_next"]))
         else:
             st.info(f"🧑‍🏫 Escalating to a human coach. {ss.decision['message_to_learner']}")
+        if ss.spoken_rec:
+            with st.expander("🔊 Spoken version (screen-reader friendly)"):
+                st.write(ss.spoken_rec)
+                read_aloud(ss.spoken_rec, "rec")
 
     st.divider()
     st.subheader("👥 Manager view · team readiness")

@@ -231,10 +231,56 @@ def run_manager() -> dict:
 
 
 # --------------------------------------------------------------------------- #
+# Suite 4: accessibility narrator (spoken output is screen-reader friendly)
+# --------------------------------------------------------------------------- #
+_SAMPLE_PATH = {
+    "certification": "AZ-204", "role": "Cloud Engineer",
+    "modules": [
+        {"skill_area": "Develop for Azure storage (Blob, Cosmos DB)",
+         "recommended_hours": 5, "accommodation_note": "Plain-language summary first.",
+         "source_id": "KB-AZ204-001"},
+        {"skill_area": "Implement Azure security (auth, Key Vault)",
+         "recommended_hours": 5, "accommodation_note": "Short blocks with breaks.",
+         "source_id": "KB-AZ204-001"},
+    ],
+    "total_hours": 10, "note": "",
+}
+
+
+def run_accessibility() -> dict:
+    from src.accessibility import to_spoken
+
+    checks = []
+    try:
+        spoken = to_spoken("learning_path", _SAMPLE_PATH, "Low vision; uses a screen reader.")
+        # Screen-reader-friendly = no markup the synthesizer would read out as junk.
+        markup = [ch for ch in "|#*`_" if ch in spoken]
+        checks.append(("non_empty", len(spoken) > 40, f"{len(spoken)} chars"))
+        checks.append(("no_markdown", not markup, f"found markup chars: {markup}"))
+        checks.append(("no_percent_symbol", "%" not in spoken, "raw '%' present"))
+        checks.append(("no_link_syntax", "](" not in spoken, "markdown link syntax present"))
+        # The cert code should be spoken, not printed as "AZ-204".
+        checks.append(("abbreviation_spelled_out", "AZ-204" not in spoken,
+                       "literal 'AZ-204' should be spelled out for speech"))
+    except Exception as e:  # noqa: BLE001
+        checks.append(("ran", False, f"raised {type(e).__name__}: {e}"))
+
+    passed = sum(1 for _, p, _ in checks if p)
+    return {
+        "suite": "accessibility",
+        "metric": "spoken_output_quality",
+        "passed": passed, "total": len(checks),
+        "score_pct": round(100 * passed / len(checks)) if checks else 0,
+        "cases": [{"name": n, "pass": p, "note": note} for n, p, note in checks],
+    }
+
+
+# --------------------------------------------------------------------------- #
 SUITES = {
     "decisions": run_decisions,
     "groundedness": run_groundedness,
     "manager": run_manager,
+    "accessibility": run_accessibility,
 }
 
 

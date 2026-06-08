@@ -64,9 +64,19 @@ Runs the Manager Insights agent over the synthetic `TEAM-A`
 
 Reasoning model only — no Search resource needed. Metric: **team rollup accuracy**.
 
+### `accessibility` — spoken output is screen-reader friendly
+
+Runs the Accessibility Narrator on a fixed sample learning path and checks the
+spoken script is safe to read aloud: non-empty, no markdown/markup characters,
+no raw `%` symbol (spelled "percent"), no markdown links, and the cert code is
+spelled out rather than printed as `AZ-204`.
+
+Reasoning model only — no Search resource needed. Metric: **spoken output quality**.
+
 ## Latest results
 
-All suites pass: `decisions` 6/6, `groundedness` 11/11, `manager` 5/5. See
+All suites pass: `decisions` 6/6, `groundedness` 11/11, `manager` 5/5,
+`accessibility` 5/5. See
 `results/latest.json` for the most recent run (per-suite pass/fail + aggregate
 metrics, written on every invocation).
 

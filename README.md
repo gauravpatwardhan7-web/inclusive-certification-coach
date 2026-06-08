@@ -2,7 +2,7 @@
 
 A multi-agent enterprise learning system for the **Microsoft Agents League — Reasoning Agents** track. It helps organisations run internal certification programmes, designed **accessibility-first** so that employees with disabilities (neurodivergent, cognitive, low-vision) get certification prep that adapts to how they actually work.
 
-> **Status:** all 5 agents built, grounded via Foundry IQ, with a visible reasoning trace, a Streamlit demo, and gold-set evals. **Data:** 100% synthetic — no real people, no PII (identifiers like `L-1001`, `EMP-001`, `TEAM-A`).
+> **Status:** all 5 agents built, grounded via Foundry IQ, with a visible reasoning trace, screen-reader-first spoken output with browser read-aloud, a Streamlit demo, and gold-set evals. **Data:** 100% synthetic — no real people, no PII (identifiers like `L-1001`, `EMP-001`, `TEAM-A`).
 
 ---
 
@@ -46,6 +46,22 @@ Manager Insights (team view): reasons over synthetic team records (TEAM-A)
    -> per-learner status (ready / on_track / at_risk / needs_support)
       + team readiness % + recommended manager actions
 ```
+
+### Accessibility & voice
+
+Inclusion is the whole point, so output is not text-only-on-a-screen:
+
+- **Accessibility Narrator** (`src/accessibility.py`) converts any agent's
+  structured output into a **screen-reader-first spoken script** — linear plain
+  text, no tables or markdown, abbreviations spelled out (`AZ-204` -> "A Z two oh
+  four"), symbols read as words ("75 percent"), adapted to the learner's profile.
+- **Read aloud in the UI** plays that script using the browser's Web Speech API
+  (`SpeechSynthesis`) — client-side, free, no audio model.
+
+This respects the hard model constraint (the reasoning models are text-only;
+multimodal is out of scope here): the *speech* is produced in the browser, the
+*text* is produced by the model, so nothing depends on an audio model. Voice
+**input** (dictation) is a documented next step.
 
 ---
 
@@ -97,6 +113,7 @@ Gold-set evals validate what matters on the Reasoning track:
 - **`decisions`** — orchestrator reasoning accuracy across 6 gold cases (advance / loop / escalate, including the accommodation-aware supportive-loop branch).
 - **`groundedness`** — citation fidelity for Curator, Study Plan Generator, and Assessment: agents emit only KB-backed skill areas / study hours, schedules respect the stated daily load, every grounded item cited.
 - **`manager`** — Manager Insights team rollup: every learner covered, valid statuses, the ready set and team readiness % match the threshold ground truth, stalled learners flagged for human support.
+- **`accessibility`** — the Accessibility Narrator's spoken output is screen-reader friendly: no markdown/tables, no raw `%`, abbreviations spelled out.
 
 ```bash
 python -m evals.run_evals                       # all suites

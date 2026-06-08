@@ -6,9 +6,10 @@ system stay grounded (no hallucinated facts, every claim cited)**.
 
 ```bash
 source .venv/bin/activate
-python -m evals.run_evals                  # both suites
+python -m evals.run_evals                  # all suites
 python -m evals.run_evals --suite decisions
 python -m evals.run_evals --suite groundedness
+python -m evals.run_evals --suite manager
 ```
 
 Each run prints a pass/fail scorecard and writes machine-readable results to
@@ -39,20 +40,35 @@ Search resource is torn down. Metric: **decision accuracy** (cases passed / tota
 Gold facts: [`gold/kb_facts.json`](gold/kb_facts.json), extracted from
 `data/knowledge_base/az204_enablement_guide.md`.
 
-Runs the Curator and Assessment agents end-to-end and checks that:
+Runs the Curator, Study Plan Generator, and Assessment agents end-to-end and checks that:
 
 - every Curator module's `recommended_hours` is a value that actually appears in the KB (no invented hours);
-- every Curator module and Assessment question names a skill area that exists in the KB (no invented skills);
+- every Curator module, Study Plan session, and Assessment question names a skill area that exists in the KB (no invented skills);
+- every Study Plan day stays within the schedule's own stated daily-minutes cap (accommodation honoured, not just claimed);
 - every grounded item carries a non-empty `source_id` (nothing uncited).
 
 This suite needs the full pipeline including **Foundry IQ retrieval (Azure AI
-Search)**. If that resource has been torn down post-submission, run only
-`--suite decisions`. Metric: **citation fidelity** (checks passed / total).
+Search)**. If that resource has been torn down post-submission, run
+`--suite decisions` and `--suite manager` (neither needs Search). Metric:
+**citation fidelity** (checks passed / total).
+
+### `manager` — team-readiness rollup correctness
+
+Runs the Manager Insights agent over the synthetic `TEAM-A`
+(`data/synthetic/team_records.json`) and checks that:
+
+- every learner in the team appears in the rollup;
+- every status is one of `ready | on_track | at_risk | needs_support`;
+- the set of learners marked `ready` exactly matches those whose latest score meets the 75% threshold, and `team_readiness_pct` equals that fraction;
+- the learner with 3 stalled attempts is flagged `needs_support` (human handoff).
+
+Reasoning model only — no Search resource needed. Metric: **team rollup accuracy**.
 
 ## Latest results
 
-Both suites pass: `decisions` 6/6, `groundedness` 7/7. See
-`results/latest.json` for the most recent run.
+All suites pass: `decisions` 6/6, `groundedness` 11/11, `manager` 5/5. See
+`results/latest.json` for the most recent run (per-suite pass/fail + aggregate
+metrics, written on every invocation).
 
 ## Notes
 

@@ -14,7 +14,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 from src.agents.curator import curate
+from src.agents.study_planner import generate_study_plan
 from src.agents.assessor import generate_assessment, score_assessment
+from src.agents.manager_insights import team_insights, load_team
 from src.orchestrator import decide
 
 st.set_page_config(page_title="Inclusive Certification Coach", page_icon="🎓", layout="wide")
@@ -23,9 +25,11 @@ st.set_page_config(page_title="Inclusive Certification Coach", page_icon="🎓",
 ss = st.session_state
 ss.setdefault("trace", [])
 ss.setdefault("path", None)
+ss.setdefault("study_plan", None)
 ss.setdefault("assessment", None)
 ss.setdefault("result", None)
 ss.setdefault("decision", None)
+ss.setdefault("insights", None)
 
 
 def log(agent: str, did: str):
@@ -59,6 +63,12 @@ with left:
             log("Learning Path Curator",
                 f"Retrieved grounded content from Foundry IQ and built a "
                 f"{ss.path['total_hours']}h path ({len(ss.path['modules'])} modules), each cited.")
+        with st.spinner("Study Plan Generator scheduling, accommodation-aware..."):
+            ss.study_plan = generate_study_plan(ss.path, profile)
+            log("Study Plan Generator",
+                f"Scheduled the path into {len(ss.study_plan['sessions'])} sessions over "
+                f"{ss.study_plan['total_days']} days ({ss.study_plan['block_minutes']}-min blocks).")
+        with st.spinner("Assessment Agent generating grounded questions..."):
             ss.assessment = generate_assessment(cert, role, num_questions=3)
             log("Assessment Agent",
                 f"Generated {len(ss.assessment['questions'])} grounded, cited questions.")
@@ -72,8 +82,25 @@ with left:
                 st.write(f"**Accommodation:** {m['accommodation_note']}")
                 st.caption(f"Source: {m['source_id']}")
 
+    if ss.study_plan:
+        sp = ss.study_plan
+        st.subheader("3 · Your accommodation-aware study schedule")
+        st.caption(
+            f"{sp['total_days']} days · up to {sp['daily_max_minutes']} min/day · "
+            f"{sp['block_minutes']}-min blocks"
+        )
+        for s in sp["sessions"][:8]:
+            st.markdown(
+                f"**Day {s['day']} · {s['skill_area']}** — {s['minutes']} min ({s['blocks']})  \n"
+                f"_{s['accommodation_note']}_"
+            )
+        if len(sp["sessions"]) > 8:
+            st.caption(f"... and {len(sp['sessions']) - 8} more sessions.")
+        if sp.get("checkpoints"):
+            st.write("**Checkpoints:** " + " · ".join(sp["checkpoints"]))
+
     if ss.assessment:
-        st.subheader("3 · Quick readiness check")
+        st.subheader("4 · Quick readiness check")
         answers = {}
         for q in ss.assessment["questions"]:
             answers[q["id"]] = st.radio(
@@ -95,7 +122,7 @@ with left:
                     f"Decision: {ss.decision['action'].upper()} — {ss.decision['reason']}")
 
     if ss.decision:
-        st.subheader("4 · Recommendation")
+        st.subheader("5 · Recommendation")
         action = ss.decision["action"]
         if action == "advance":
             st.success(f"✅ Advance. {ss.decision['message_to_learner']}")
@@ -105,6 +132,27 @@ with left:
                 st.write("**Focus next on:** " + ", ".join(ss.decision["focus_next"]))
         else:
             st.info(f"🧑‍🏫 Escalating to a human coach. {ss.decision['message_to_learner']}")
+
+    st.divider()
+    st.subheader("👥 Manager view · team readiness")
+    st.caption("Agent 5 — Manager Insights. Reasons over a synthetic team's progress (TEAM-A).")
+    if st.button("Run team readiness rollup"):
+        with st.spinner("Manager Insights reasoning over the team..."):
+            ss.insights = team_insights(load_team())
+            log("Manager Insights",
+                f"Rolled up TEAM-A: {ss.insights['team_readiness_pct']}% ready.")
+    if ss.insights:
+        ins = ss.insights
+        st.metric("Team readiness", f"{ins['team_readiness_pct']}%")
+        st.write(ins["summary"])
+        status_icon = {"ready": "✅", "on_track": "📈", "at_risk": "⚠️", "needs_support": "🧑‍🏫"}
+        for lr in ins["learners"]:
+            st.markdown(
+                f"{status_icon.get(lr['status'], '•')} **{lr['learner_id']}** "
+                f"({lr['status']}) — {lr['rationale']}  \n_Action: {lr['recommended_action']}_"
+            )
+        if ins.get("team_actions"):
+            st.write("**Team actions:** " + " · ".join(ins["team_actions"]))
 
 # ================= RIGHT: the reasoning trace =================
 with right:

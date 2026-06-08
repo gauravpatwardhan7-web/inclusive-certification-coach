@@ -12,6 +12,7 @@ import json
 from src.foundry_client import chat
 from src.config import settings
 from src.agents.curator import curate
+from src.agents.study_planner import generate_study_plan
 from src.agents.assessor import generate_assessment, score_assessment
 
 DECISION_PROMPT = """You are the Orchestrator of an accessibility-first \
@@ -77,7 +78,14 @@ def run(certification: str, role: str, accessibility_profile: str,
                   "did": f"Built a {path['total_hours']}h grounded learning path "
                          f"({len(path['modules'])} modules), cited to source docs."})
 
-    # Step 2 - Assessment: generate
+    # Step 2 - Study Plan Generator: schedule the path, accommodation-aware
+    study_plan = generate_study_plan(path, accessibility_profile)
+    trace.append({"agent": "Study Plan Generator",
+                  "did": f"Scheduled the path into {len(study_plan['sessions'])} sessions "
+                         f"over {study_plan['total_days']} days "
+                         f"({study_plan['block_minutes']}-min blocks), accommodation-aware."})
+
+    # Step 3 - Assessment: generate
     assessment = generate_assessment(certification, role, num_questions=3)
     trace.append({"agent": "Assessment Agent",
                   "did": f"Generated {len(assessment['questions'])} grounded, cited questions."})
@@ -96,6 +104,7 @@ def run(certification: str, role: str, accessibility_profile: str,
 
     return {
         "learning_path": path,
+        "study_plan": study_plan,
         "assessment": assessment,
         "result": result,
         "decision": decision,

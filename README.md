@@ -2,7 +2,7 @@
 
 A multi-agent enterprise learning system for the **Microsoft Agents League — Reasoning Agents** track. It helps organisations run internal certification programmes, designed **accessibility-first** so that employees with disabilities (neurodivergent, cognitive, low-vision) get certification prep that adapts to how they actually work.
 
-> **Status:** work in progress. **Data:** 100% synthetic — no real people, no PII (identifiers like `L-1001`, `EMP-001`, `TEAM-A`).
+> **Status:** all 5 agents built, grounded via Foundry IQ, with a visible reasoning trace, a Streamlit demo, and gold-set evals. **Data:** 100% synthetic — no real people, no PII (identifiers like `L-1001`, `EMP-001`, `TEAM-A`).
 
 ---
 
@@ -17,27 +17,34 @@ The challenge scenario is an enterprise certification-learning system. Most impl
 
 ## Architecture
 
+Five agents: four in the per-learner reasoning loop, plus a team-level
+Manager Insights agent.
+
 | Agent | Type | Job | Grounding |
 |---|---|---|---|
 | Learning Path Curator | workflow step | Map a certification goal to skills + cited modules, with per-module accommodation notes | Foundry IQ |
+| Study Plan Generator | workflow step | Turn the cited path into an accommodation-aware day-by-day schedule (block sizes, breaks, checkpoints) | Foundry IQ (pacing rules) |
 | Assessment Agent | workflow step | Generate grounded, cited practice questions; score readiness; report weak areas | Foundry IQ |
 | Orchestrator | reasoning loop | Reason over score, weak areas, history, and accessibility profile to decide: advance, loop back to weak areas, or escalate to a human | — |
-
-The Curator already emits accommodation-aware pacing per module, so a separate
-Study Plan Generator agent is a planned stretch, not part of the current loop.
+| Manager Insights | reasoning / analytics | Roll up a team's progress: per-learner status, team readiness %, recommended actions | synthetic team records |
 
 **Microsoft IQ layer:** Foundry IQ (Azure AI Search), grounded retrieval with citations.
 
 ```
 Learner goal (cert + role + accessibility profile)
-   -> Curator        : Foundry IQ retrieval -> cited, accommodation-aware learning path
-      -> Assessment  : Foundry IQ retrieval -> cited questions -> score + weak areas
-         -> Orchestrator (reasoning model): given score + weak areas + attempt
-            history + accessibility profile, decide
-               advance         (ready)
-               loop            (not ready -> revisit only the weak areas)
-               escalate        (repeated failure -> human coach)
+   -> Curator         : Foundry IQ retrieval -> cited, accommodation-aware learning path
+      -> Study Plan   : Foundry IQ pacing rules -> accommodation-aware schedule
+         -> Assessment: Foundry IQ retrieval -> cited questions -> score + weak areas
+            -> Orchestrator (reasoning model): given score + weak areas + attempt
+               history + accessibility profile, decide
+                  advance      (ready)
+                  loop         (not ready -> revisit only the weak areas)
+                  escalate     (repeated failure -> human coach)
    -> every step appended to a visible reasoning trace shown in the UI
+
+Manager Insights (team view): reasons over synthetic team records (TEAM-A)
+   -> per-learner status (ready / on_track / at_risk / needs_support)
+      + team readiness % + recommended manager actions
 ```
 
 ---
@@ -65,7 +72,12 @@ streamlit run app/streamlit_app.py
 
 ## Data sources
 
-All synthetic. `data/knowledge_base/` holds the certification guides used for grounded retrieval via Foundry IQ (e.g. `az204_enablement_guide.md`, source id `KB-AZ204-001`). Identifiers like `L-1001` / `EMP-001` / `TEAM-A` are fabricated for demonstration only. No real people, no PII.
+All synthetic.
+
+- `data/knowledge_base/` — certification guides used for grounded retrieval via Foundry IQ (e.g. `az204_enablement_guide.md`, source id `KB-AZ204-001`).
+- `data/synthetic/team_records.json` — fabricated team (`TEAM-A`) of learner records (`L-1001` / `EMP-001` …) consumed by the Manager Insights agent.
+
+Identifiers are fabricated for demonstration only. No real people, no PII.
 
 ---
 
@@ -80,14 +92,16 @@ All synthetic. `data/knowledge_base/` holds the certification guides used for gr
 
 ## Evaluation
 
-Gold-set evals validate the two things that matter on the Reasoning track:
+Gold-set evals validate what matters on the Reasoning track:
 
-- **`decisions`** — orchestrator reasoning accuracy across 6 gold cases (advance / loop / escalate, including the accommodation-aware supportive-loop branch). Currently **6/6**.
-- **`groundedness`** — citation fidelity: agents emit only KB-backed skill areas and study hours, every grounded item cited. Currently **7/7**.
+- **`decisions`** — orchestrator reasoning accuracy across 6 gold cases (advance / loop / escalate, including the accommodation-aware supportive-loop branch).
+- **`groundedness`** — citation fidelity for Curator, Study Plan Generator, and Assessment: agents emit only KB-backed skill areas / study hours, schedules respect the stated daily load, every grounded item cited.
+- **`manager`** — Manager Insights team rollup: every learner covered, valid statuses, the ready set and team readiness % match the threshold ground truth, stalled learners flagged for human support.
 
 ```bash
-python -m evals.run_evals             # both suites
-python -m evals.run_evals --suite decisions   # no Search resource needed
+python -m evals.run_evals                       # all suites
+python -m evals.run_evals --suite decisions     # reasoning only, no Search resource needed
+python -m evals.run_evals --suite manager       # reasoning only, no Search resource needed
 ```
 
 See [`evals/README.md`](evals/README.md) for details; results land in `evals/results/latest.json`.

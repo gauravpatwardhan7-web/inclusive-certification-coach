@@ -1,11 +1,131 @@
 {
-  "run_at": "2026-06-08T03:11:32.731290+00:00",
+  "run_at": "2026-06-08T03:42:54.094538+00:00",
   "suites": [
+    {
+      "suite": "decisions",
+      "metric": "decision_accuracy",
+      "passed": 6,
+      "total": 6,
+      "score_pct": 100,
+      "cases": [
+        {
+          "id": "D1-ready-first-attempt",
+          "pass": true,
+          "checks": [
+            {
+              "name": "action",
+              "pass": true,
+              "note": "expected advance, got advance"
+            },
+            {
+              "name": "focus_next_empty",
+              "pass": true,
+              "note": "expected empty focus_next, got []"
+            }
+          ],
+          "got": {
+            "action": "advance",
+            "reason": "You achieved a perfect score across all skill areas and are ready to move on to the next module."
+          }
+        },
+        {
+          "id": "D2-not-ready-first-attempt",
+          "pass": true,
+          "checks": [
+            {
+              "name": "action",
+              "pass": true,
+              "note": "expected loop, got loop"
+            },
+            {
+              "name": "focus_next_nonempty",
+              "pass": true,
+              "note": "expected non-empty focus_next, got []"
+            }
+          ],
+          "got": {
+            "action": "loop",
+            "reason": "You scored 33% and need to focus on Azure storage and Azure security to improve."
+          }
+        },
+        {
+          "id": "D3-repeated-failure-escalate",
+          "pass": true,
+          "checks": [
+            {
+              "name": "action",
+              "pass": true,
+              "note": "expected escalate, got escalate"
+            }
+          ],
+          "got": {
+            "action": "escalate",
+            "reason": "After three attempts without consistent improvement, targeted human support will help address persistent gaps in Azure storage and security."
+          }
+        },
+        {
+          "id": "D4-accommodation-supportive-loop",
+          "pass": true,
+          "checks": [
+            {
+              "name": "action",
+              "pass": true,
+              "note": "expected loop, got loop"
+            },
+            {
+              "name": "focus_next_nonempty",
+              "pass": true,
+              "note": "expected non-empty focus_next, got []"
+            }
+          ],
+          "got": {
+            "action": "loop",
+            "reason": "Learner still needs to master \u2018Implement Azure security\u2019 and with only two attempts, a supportive loop focusing on that area and lighter pacing fits their ADHD profile."
+          }
+        },
+        {
+          "id": "D5-perfect-advance-empty-focus",
+          "pass": true,
+          "checks": [
+            {
+              "name": "action",
+              "pass": true,
+              "note": "expected advance, got advance"
+            },
+            {
+              "name": "focus_next_empty",
+              "pass": true,
+              "note": "expected empty focus_next, got []"
+            }
+          ],
+          "got": {
+            "action": "advance",
+            "reason": "You achieved a perfect score across all skill areas and are ready to move forward."
+          }
+        },
+        {
+          "id": "D6-borderline-pass-advance",
+          "pass": true,
+          "checks": [
+            {
+              "name": "action",
+              "pass": true,
+              "note": "expected advance, got advance"
+            }
+          ],
+          "got": {
+            "action": "advance",
+            "reason": "You passed the assessment on your first try with a 75% score and demonstrated readiness to move forward."
+          }
+        }
+      ],
+      "duration_s": 24.6
+    },
     {
       "suite": "groundedness",
       "metric": "citation_fidelity",
-      "passed": 7,
-      "total": 7,
+      "passed": 11,
+      "total": 11,
       "score_pct": 100,
       "cases": [
         {
@@ -29,6 +149,26 @@
           "note": "0 modules missing a source_id"
         },
         {
+          "name": "planner_has_sessions",
+          "pass": true,
+          "note": "34 sessions"
+        },
+        {
+          "name": "planner_skills_grounded",
+          "pass": true,
+          "note": "0 sessions with ungrounded skill areas"
+        },
+        {
+          "name": "planner_all_cited",
+          "pass": true,
+          "note": "0 sessions missing a source_id"
+        },
+        {
+          "name": "planner_respects_daily_load",
+          "pass": true,
+          "note": "0 days exceed the stated daily max"
+        },
+        {
           "name": "assessor_has_questions",
           "pass": true,
           "note": "3 questions"
@@ -44,7 +184,42 @@
           "note": "0 questions with ungrounded skill areas"
         }
       ],
-      "duration_s": 33.9
+      "duration_s": 121.2
+    },
+    {
+      "suite": "manager",
+      "metric": "team_rollup_accuracy",
+      "passed": 5,
+      "total": 5,
+      "score_pct": 100,
+      "cases": [
+        {
+          "name": "all_learners_covered",
+          "pass": true,
+          "note": "covered ['L-1001', 'L-1002', 'L-1003', 'L-1004', 'L-1005'] vs ['L-1001', 'L-1002', 'L-1003', 'L-1004', 'L-1005']"
+        },
+        {
+          "name": "valid_statuses",
+          "pass": true,
+          "note": "invalid: []"
+        },
+        {
+          "name": "ready_set_correct",
+          "pass": true,
+          "note": "expected ready=['L-1001', 'L-1004'], got ['L-1001', 'L-1004']"
+        },
+        {
+          "name": "team_pct_correct",
+          "pass": true,
+          "note": "expected 40%, got 40"
+        },
+        {
+          "name": "stalled_learner_supported",
+          "pass": true,
+          "note": "L-1003 status=needs_support"
+        }
+      ],
+      "duration_s": 9.1
     }
   ]
 }

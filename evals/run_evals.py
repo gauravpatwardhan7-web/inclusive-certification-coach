@@ -111,6 +111,7 @@ def _skill_grounded(emitted: str, kb_skills: list[dict]) -> bool:
 def run_groundedness() -> dict:
     from src.agents.curator import curate
     from src.agents.assessor import generate_assessment
+    from src.agents.study_planner import generate_study_plan
 
     facts = _load("kb_facts.json")
     valid_hours = set(facts["valid_recommended_hours"])
@@ -134,6 +135,29 @@ def run_groundedness() -> dict:
                        f"{len(no_cite)} modules missing a source_id"))
     except Exception as e:  # noqa: BLE001
         checks.append(("curator_ran", False, f"raised {type(e).__name__}: {e}"))
+
+    # --- Study Plan Generator: sessions stay grounded, cited, within daily load
+    try:
+        sp_profile = "Has ADHD; struggles to focus in long study sessions."
+        plan = generate_study_plan(path, sp_profile)
+        sess = plan.get("sessions", [])
+        s_bad_skill = [s for s in sess if not _skill_grounded(s.get("skill_area", ""), facts["skill_areas"])]
+        s_no_cite = [s for s in sess if not str(s.get("source_id", "")).strip()
+                     or s.get("source_id") == "unknown-source"]
+        daily_max = plan.get("daily_max_minutes", 0)
+        by_day: dict = {}
+        for s in sess:
+            by_day[s.get("day")] = by_day.get(s.get("day"), 0) + int(s.get("minutes", 0))
+        over_load = [d for d, m in by_day.items() if daily_max and m > daily_max]
+        checks.append(("planner_has_sessions", len(sess) > 0, f"{len(sess)} sessions"))
+        checks.append(("planner_skills_grounded", not s_bad_skill,
+                       f"{len(s_bad_skill)} sessions with ungrounded skill areas"))
+        checks.append(("planner_all_cited", not s_no_cite,
+                       f"{len(s_no_cite)} sessions missing a source_id"))
+        checks.append(("planner_respects_daily_load", not over_load,
+                       f"{len(over_load)} days exceed the stated daily max"))
+    except Exception as e:  # noqa: BLE001
+        checks.append(("planner_ran", False, f"raised {type(e).__name__}: {e}"))
 
     # --- Assessor: every question must carry a source_id and a known skill area
     try:
@@ -161,7 +185,57 @@ def run_groundedness() -> dict:
 
 
 # --------------------------------------------------------------------------- #
-SUITES = {"decisions": run_decisions, "groundedness": run_groundedness}
+# Suite 3: manager insights (team readiness)
+# --------------------------------------------------------------------------- #
+def run_manager() -> dict:
+    from src.agents.manager_insights import team_insights, load_team
+
+    team = load_team()
+    threshold = team["readiness_threshold_pct"]
+    records = {l["learner_id"]: l for l in team["learners"]}
+    valid_status = {"ready", "on_track", "at_risk", "needs_support"}
+    # Ground truth: a learner is "ready" iff their latest score meets the threshold.
+    truly_ready = {lid for lid, r in records.items() if r["latest_score_pct"] >= threshold}
+    expected_pct = round(100 * len(truly_ready) / len(records))
+    checks = []
+
+    try:
+        out = team_insights(team)
+        learners = {l["learner_id"]: l for l in out.get("learners", [])}
+
+        checks.append(("all_learners_covered", set(learners) == set(records),
+                       f"covered {sorted(learners)} vs {sorted(records)}"))
+        bad_status = [lid for lid, l in learners.items() if l.get("status") not in valid_status]
+        checks.append(("valid_statuses", not bad_status, f"invalid: {bad_status}"))
+        # The agent must mark exactly the at/above-threshold learners as "ready".
+        agent_ready = {lid for lid, l in learners.items() if l.get("status") == "ready"}
+        checks.append(("ready_set_correct", agent_ready == truly_ready,
+                       f"expected ready={sorted(truly_ready)}, got {sorted(agent_ready)}"))
+        checks.append(("team_pct_correct", out.get("team_readiness_pct") == expected_pct,
+                       f"expected {expected_pct}%, got {out.get('team_readiness_pct')}"))
+        # The 3+ stalled-attempt learner must be flagged for human support.
+        l3 = learners.get("L-1003", {})
+        checks.append(("stalled_learner_supported", l3.get("status") == "needs_support",
+                       f"L-1003 status={l3.get('status')}"))
+    except Exception as e:  # noqa: BLE001
+        checks.append(("ran", False, f"raised {type(e).__name__}: {e}"))
+
+    passed = sum(1 for _, p, _ in checks if p)
+    return {
+        "suite": "manager",
+        "metric": "team_rollup_accuracy",
+        "passed": passed, "total": len(checks),
+        "score_pct": round(100 * passed / len(checks)) if checks else 0,
+        "cases": [{"name": n, "pass": p, "note": note} for n, p, note in checks],
+    }
+
+
+# --------------------------------------------------------------------------- #
+SUITES = {
+    "decisions": run_decisions,
+    "groundedness": run_groundedness,
+    "manager": run_manager,
+}
 
 
 def main() -> int:

@@ -1,0 +1,50 @@
+{
+  "run_at": "2026-06-08T03:11:32.731290+00:00",
+  "suites": [
+    {
+      "suite": "groundedness",
+      "metric": "citation_fidelity",
+      "passed": 7,
+      "total": 7,
+      "score_pct": 100,
+      "cases": [
+        {
+          "name": "curator_has_modules",
+          "pass": true,
+          "note": "5 modules"
+        },
+        {
+          "name": "curator_hours_grounded",
+          "pass": true,
+          "note": "0 modules with hallucinated hours"
+        },
+        {
+          "name": "curator_skills_grounded",
+          "pass": true,
+          "note": "0 modules with ungrounded skill areas"
+        },
+        {
+          "name": "curator_all_cited",
+          "pass": true,
+          "note": "0 modules missing a source_id"
+        },
+        {
+          "name": "assessor_has_questions",
+          "pass": true,
+          "note": "3 questions"
+        },
+        {
+          "name": "assessor_all_cited",
+          "pass": true,
+          "note": "0 questions missing a source_id"
+        },
+        {
+          "name": "assessor_skills_grounded",
+          "pass": true,
+          "note": "0 questions with ungrounded skill areas"
+        }
+      ],
+      "duration_s": 33.9
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "description": "Gold set for the Orchestrator's reasoning decision (advance | loop | escalate). Each case fixes the assessment result, attempt history, and accessibility profile, and asserts the expected action. These cases isolate the one genuinely agentic decision in the system, so they run without the retrieval layer.",
+  "cases": [
+    {
+      "id": "D1-ready-first-attempt",
+      "rationale": "High score on first attempt with no accommodation needs -> learner is ready.",
+      "assessment_result": {
+        "total": 3, "correct": 3, "score_pct": 100,
+        "per_skill": [
+          {"skill_area": "Develop Azure compute solutions", "result": "correct"},
+          {"skill_area": "Develop for Azure storage", "result": "correct"},
+          {"skill_area": "Implement Azure security", "result": "correct"}
+        ],
+        "weak_areas": [], "ready": true
+      },
+      "history": [{"attempt": 1, "score_pct": 100}],
+      "accessibility_profile": "none",
+      "expect": {"action": "advance", "focus_next_empty": true}
+    },
+    {
+      "id": "D2-not-ready-first-attempt",
+      "rationale": "Low score, first attempt -> loop back to the weak areas, not escalate.",
+      "assessment_result": {
+        "total": 3, "correct": 1, "score_pct": 33,
+        "per_skill": [
+          {"skill_area": "Develop Azure compute solutions", "result": "correct"},
+          {"skill_area": "Develop for Azure storage", "result": "incorrect"},
+          {"skill_area": "Implement Azure security", "result": "incorrect"}
+        ],
+        "weak_areas": ["Develop for Azure storage", "Implement Azure security"],
+        "ready": false
+      },
+      "history": [{"attempt": 1, "score_pct": 33}],
+      "accessibility_profile": "none",
+      "expect": {"action": "loop", "focus_next_nonempty": true}
+    },
+    {
+      "id": "D3-repeated-failure-escalate",
+      "rationale": "Three attempts, still failing -> hand off to a human coach.",
+      "assessment_result": {
+        "total": 3, "correct": 1, "score_pct": 33,
+        "per_skill": [
+          {"skill_area": "Develop for Azure storage", "result": "incorrect"},
+          {"skill_area": "Implement Azure security", "result": "incorrect"},
+          {"skill_area": "Develop Azure compute solutions", "result": "correct"}
+        ],
+        "weak_areas": ["Develop for Azure storage", "Implement Azure security"],
+        "ready": false
+      },
+      "history": [
+        {"attempt": 1, "score_pct": 33},
+        {"attempt": 2, "score_pct": 40},
+        {"attempt": 3, "score_pct": 33}
+      ],
+      "accessibility_profile": "none",
+      "expect": {"action": "escalate"}
+    },
+    {
+      "id": "D4-accommodation-supportive-loop",
+      "rationale": "Learner is close and on their 2nd attempt with a focus disability -> prefer a supportive loop with lighter pacing over escalation. Tests the accommodation-aware branch.",
+      "assessment_result": {
+        "total": 3, "correct": 2, "score_pct": 67,
+        "per_skill": [
+          {"skill_area": "Develop Azure compute solutions", "result": "correct"},
+          {"skill_area": "Develop for Azure storage", "result": "correct"},
+          {"skill_area": "Implement Azure security", "result": "incorrect"}
+        ],
+        "weak_areas": ["Implement Azure security"],
+        "ready": false
+      },
+      "history": [
+        {"attempt": 1, "score_pct": 60},
+        {"attempt": 2, "score_pct": 67}
+      ],
+      "accessibility_profile": "Has ADHD; struggles to focus in long study sessions.",
+      "expect": {"action": "loop", "focus_next_nonempty": true}
+    },
+    {
+      "id": "D5-perfect-advance-empty-focus",
+      "rationale": "Perfect score -> advance with no weak areas to revisit.",
+      "assessment_result": {
+        "total": 3, "correct": 3, "score_pct": 100,
+        "per_skill": [
+          {"skill_area": "Monitor, troubleshoot, optimize", "result": "correct"},
+          {"skill_area": "Connect to and consume services", "result": "correct"},
+          {"skill_area": "Implement Azure security", "result": "correct"}
+        ],
+        "weak_areas": [], "ready": true
+      },
+      "history": [{"attempt": 1, "score_pct": 100}],
+      "accessibility_profile": "Low vision; uses a screen reader.",
+      "expect": {"action": "advance", "focus_next_empty": true}
+    },
+    {
+      "id": "D6-borderline-pass-advance",
+      "rationale": "At the 75% readiness threshold on first attempt -> advance.",
+      "assessment_result": {
+        "total": 4, "correct": 3, "score_pct": 75,
+        "per_skill": [
+          {"skill_area": "Develop Azure compute solutions", "result": "correct"},
+          {"skill_area": "Develop for Azure storage", "result": "correct"},
+          {"skill_area": "Implement Azure security", "result": "correct"},
+          {"skill_area": "Monitor, troubleshoot, optimize", "result": "incorrect"}
+        ],
+        "weak_areas": ["Monitor, troubleshoot, optimize"],
+        "ready": true
+      },
+      "history": [{"attempt": 1, "score_pct": 75}],
+      "accessibility_profile": "none",
+      "expect": {"action": "advance"}
+    }
+  ]
+}

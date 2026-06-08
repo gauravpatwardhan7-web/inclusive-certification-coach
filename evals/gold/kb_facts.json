@@ -1,0 +1,16 @@
+{
+  "description": "Ground-truth facts extracted from data/knowledge_base/az204_enablement_guide.md. Used by the groundedness suite to verify that the Curator and Assessment agents only emit skill areas and study-hour figures that actually exist in the knowledge base (i.e. they ground rather than hallucinate).",
+  "source_id": "KB-AZ204-001",
+  "certification": "AZ-204",
+  "role": "Cloud Engineer",
+  "skill_areas": [
+    {"name": "Develop Azure compute solutions (Functions, App Service)", "recommended_hours": 6},
+    {"name": "Develop for Azure storage (Blob, Cosmos DB)", "recommended_hours": 5},
+    {"name": "Implement Azure security (auth, Key Vault)", "recommended_hours": 5},
+    {"name": "Monitor, troubleshoot, optimize", "recommended_hours": 3},
+    {"name": "Connect to and consume services (API Management, event/message)", "recommended_hours": 5}
+  ],
+  "valid_recommended_hours": [6, 5, 5, 3, 5],
+  "total_hours": 24,
+  "readiness_threshold_pct": 75
+}

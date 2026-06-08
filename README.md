@@ -19,19 +19,25 @@ The challenge scenario is an enterprise certification-learning system. Most impl
 
 | Agent | Type | Job | Grounding |
 |---|---|---|---|
-| Learning Path Curator | workflow step | Map a certification goal to skills + cited learning resources | Foundry IQ |
-| Study Plan Generator | workflow step | Turn content into an accommodation-aware study schedule | synthetic work-signal data |
-| Assessment Agent | workflow step | Generate grounded, cited practice questions; score readiness | Foundry IQ |
-| Orchestrator | reasoning loop | Decide: advance, loop back to weak areas, or escalate | — |
+| Learning Path Curator | workflow step | Map a certification goal to skills + cited modules, with per-module accommodation notes | Foundry IQ |
+| Assessment Agent | workflow step | Generate grounded, cited practice questions; score readiness; report weak areas | Foundry IQ |
+| Orchestrator | reasoning loop | Reason over score, weak areas, history, and accessibility profile to decide: advance, loop back to weak areas, or escalate to a human | — |
 
-**Microsoft IQ layer:** Foundry IQ (grounded retrieval with citations).
+The Curator already emits accommodation-aware pacing per module, so a separate
+Study Plan Generator agent is a planned stretch, not part of the current loop.
+
+**Microsoft IQ layer:** Foundry IQ (Azure AI Search), grounded retrieval with citations.
 
 ```
-Learner goal
-   -> Curator (cited learning path)
-      -> Study Plan Generator (accommodation-aware schedule)
-         -> Assessment Agent (cited questions + readiness score)
-            -> Orchestrator: ready? -> advance | not ready? -> loop to weak areas
+Learner goal (cert + role + accessibility profile)
+   -> Curator        : Foundry IQ retrieval -> cited, accommodation-aware learning path
+      -> Assessment  : Foundry IQ retrieval -> cited questions -> score + weak areas
+         -> Orchestrator (reasoning model): given score + weak areas + attempt
+            history + accessibility profile, decide
+               advance         (ready)
+               loop            (not ready -> revisit only the weak areas)
+               escalate        (repeated failure -> human coach)
+   -> every step appended to a visible reasoning trace shown in the UI
 ```
 
 ---
@@ -59,7 +65,7 @@ streamlit run app/streamlit_app.py
 
 ## Data sources
 
-All synthetic. See `data/synthetic/` (learner records, work signals, semantic seed) and `data/knowledge_base/` (certification guides used for grounded retrieval). Fabricated for demonstration only.
+All synthetic. `data/knowledge_base/` holds the certification guides used for grounded retrieval via Foundry IQ (e.g. `az204_enablement_guide.md`, source id `KB-AZ204-001`). Identifiers like `L-1001` / `EMP-001` / `TEAM-A` are fabricated for demonstration only. No real people, no PII.
 
 ---
 
@@ -74,4 +80,14 @@ All synthetic. See `data/synthetic/` (learner records, work signals, semantic se
 
 ## Evaluation
 
-See `evals/` for the gold test sets and metrics used to validate grounding, citation fidelity, and orchestration decisions.
+Gold-set evals validate the two things that matter on the Reasoning track:
+
+- **`decisions`** — orchestrator reasoning accuracy across 6 gold cases (advance / loop / escalate, including the accommodation-aware supportive-loop branch). Currently **6/6**.
+- **`groundedness`** — citation fidelity: agents emit only KB-backed skill areas and study hours, every grounded item cited. Currently **7/7**.
+
+```bash
+python -m evals.run_evals             # both suites
+python -m evals.run_evals --suite decisions   # no Search resource needed
+```
+
+See [`evals/README.md`](evals/README.md) for details; results land in `evals/results/latest.json`.

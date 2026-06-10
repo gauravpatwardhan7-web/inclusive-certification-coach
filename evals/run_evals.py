@@ -310,11 +310,209 @@ def run_accessibility() -> dict:
 
 
 # --------------------------------------------------------------------------- #
+# Suite 5: calendar negotiation (blocks fit real gaps; infeasible weeks push back)
+# --------------------------------------------------------------------------- #
+def _hhmm_overlaps(a_start, a_end, b_start, b_end) -> bool:
+    """Zero-padded HH:MM strings compare correctly lexicographically."""
+    return a_start < b_end and b_start < a_end
+
+
+def run_calendar() -> dict:
+    from src.agents.calendar_negotiator import negotiate, load_calendar
+
+    fixture = _load("calendar_fixture.json")
+    plan, profile = fixture["study_plan"], fixture["accessibility_profile"]
+    checks = []
+
+    # --- Light week: everything must fit, and fit CORRECTLY.
+    try:
+        cal = load_calendar("calendar_light_week.json")
+        events = {d["date"]: d["events"] for d in cal["days"]}
+        wh = cal["work_hours"]
+        out = negotiate(plan, cal, profile)
+        blocks = out["scheduled_blocks"]
+
+        overlaps = [b for b in blocks for ev in events.get(b["date"], [])
+                    if _hhmm_overlaps(b["start"], b["end"], ev["start"], ev["end"])]
+        outside = [b for b in blocks
+                   if b["start"] < wh["start"] or b["end"] > wh["end"]]
+        per_day: dict = {}
+        for b in blocks:
+            per_day[b["date"]] = per_day.get(b["date"], 0) + b["minutes"]
+        cap = out["policy"]["max_daily_minutes"]
+        over_cap = [d for d, m in per_day.items() if m > cap]
+        no_cite = [b for b in blocks if not str(b.get("source_id", "")).strip()]
+
+        checks.append(("light_feasible", out["feasible"],
+                       f"feasible={out['feasible']}, unplaced={out['unplaced']}"))
+        checks.append(("light_all_minutes_booked",
+                       out["stats"]["scheduled_minutes"] == out["stats"]["required_minutes_this_week"],
+                       f"booked {out['stats']['scheduled_minutes']} of "
+                       f"{out['stats']['required_minutes_this_week']}"))
+        checks.append(("light_no_meeting_overlap", not overlaps,
+                       f"{len(overlaps)} blocks overlap meetings"))
+        checks.append(("light_within_work_hours", not outside,
+                       f"{len(outside)} blocks outside work hours"))
+        checks.append(("light_daily_cap_respected", not over_cap,
+                       f"days over the {cap}-min policy cap: {over_cap}"))
+        checks.append(("light_blocks_cited", not no_cite,
+                       f"{len(no_cite)} blocks missing a source_id"))
+    except Exception as e:  # noqa: BLE001
+        checks.append(("light_ran", False, f"raised {type(e).__name__}: {e}"))
+
+    # --- Packed week: the agent must NOT pretend - it must push back.
+    try:
+        out = negotiate(plan, load_calendar("calendar_packed_week.json"), profile)
+        stats, neg = out["stats"], out["negotiation"]
+        checks.append(("packed_infeasible", not out["feasible"],
+                       f"feasible={out['feasible']}"))
+        checks.append(("packed_shortfall_detected",
+                       stats["available_minutes_this_week"] < stats["required_minutes_this_week"],
+                       f"available={stats['available_minutes_this_week']}, "
+                       f"required={stats['required_minutes_this_week']}"))
+        checks.append(("packed_manager_message", bool(str(neg.get("message_to_manager", "")).strip()),
+                       "expected a non-empty evidence-based message to the manager"))
+        checks.append(("packed_offers_options", len(neg.get("options", [])) >= 2,
+                       f"{len(neg.get('options', []))} trade-off options offered"))
+    except Exception as e:  # noqa: BLE001
+        checks.append(("packed_ran", False, f"raised {type(e).__name__}: {e}"))
+
+    passed = sum(1 for _, p, _ in checks if p)
+    return {
+        "suite": "calendar",
+        "metric": "negotiation_correctness",
+        "passed": passed, "total": len(checks),
+        "score_pct": round(100 * passed / len(checks)) if checks else 0,
+        "cases": [{"name": n, "pass": p, "note": note} for n, p, note in checks],
+    }
+
+
+# --------------------------------------------------------------------------- #
+# Suite 6: teach-back grading (understanding, gaps, misconceptions, probing)
+# --------------------------------------------------------------------------- #
+def run_teachback() -> dict:
+    from src.agents.teachback import evaluate_teachback
+
+    gold = _load("teachback_cases.json")
+    cert, skill = gold["certification"], gold["skill_area"]
+    checks = []
+    scores: dict[str, int] = {}
+
+    for c in gold["cases"]:
+        cid, exp = c["id"], c["expect"]
+        try:
+            ev = evaluate_teachback(cert, skill, c["explanation"])
+            pct = int(ev.get("understanding_pct", -1))
+            scores[cid] = pct
+            if "min_understanding_pct" in exp:
+                checks.append((f"{cid}_understanding", pct >= exp["min_understanding_pct"],
+                               f"expected >= {exp['min_understanding_pct']}, got {pct}"))
+            if "max_understanding_pct" in exp:
+                checks.append((f"{cid}_low_score", pct <= exp["max_understanding_pct"],
+                               f"expected <= {exp['max_understanding_pct']}, got {pct}"))
+            if exp.get("no_misconception"):
+                checks.append((f"{cid}_no_misconception",
+                               not str(ev.get("misconception", "")).strip(),
+                               f"unexpected misconception: {ev.get('misconception')!r}"))
+            if exp.get("concepts_missing_nonempty"):
+                checks.append((f"{cid}_names_the_gap",
+                               len(ev.get("concepts_missing", [])) > 0,
+                               "expected non-empty concepts_missing"))
+            if exp.get("misconception_nonempty"):
+                checks.append((f"{cid}_misconception_flagged",
+                               bool(str(ev.get("misconception", "")).strip()),
+                               "expected the misconception to be flagged"))
+            checks.append((f"{cid}_one_follow_up",
+                           bool(str(ev.get("follow_up_question", "")).strip()),
+                           "expected a follow-up question"))
+            checks.append((f"{cid}_cited",
+                           bool(str(ev.get("source_id", "")).strip()),
+                           "expected a KB source_id on the grade"))
+        except Exception as e:  # noqa: BLE001
+            checks.append((f"{cid}_ran", False, f"raised {type(e).__name__}: {e}"))
+
+    # Relative check: complete must outscore incomplete - robust to grader strictness.
+    if "T1-complete-explanation" in scores and "T2-incomplete-explanation" in scores:
+        checks.append(("complete_outscores_incomplete",
+                       scores["T1-complete-explanation"] > scores["T2-incomplete-explanation"],
+                       f"T1={scores['T1-complete-explanation']} vs "
+                       f"T2={scores['T2-incomplete-explanation']}"))
+
+    passed = sum(1 for _, p, _ in checks if p)
+    return {
+        "suite": "teachback",
+        "metric": "grading_quality",
+        "passed": passed, "total": len(checks),
+        "score_pct": round(100 * passed / len(checks)) if checks else 0,
+        "cases": [{"name": n, "pass": p, "note": note} for n, p, note in checks],
+    }
+
+
+# --------------------------------------------------------------------------- #
+# Suite 7: memory decay model (pure code - no LLM, no Search)
+# --------------------------------------------------------------------------- #
+def run_mastery() -> dict:
+    from src import mastery
+
+    checks = []
+    d = mastery.decayed_mastery
+
+    e1 = {"mastery": 80, "last_reviewed": "2026-01-01", "reviews": 1}
+    checks.append(("halves_after_one_half_life",
+                   round(d(e1, "2026-01-08")) == 40,
+                   f"80 after 7d (HL 7d) -> {d(e1, '2026-01-08'):.1f}, expected 40"))
+
+    e3 = {"mastery": 80, "last_reviewed": "2026-01-01", "reviews": 3}
+    checks.append(("spacing_slows_decay",
+                   d(e3, "2026-01-08") > d(e1, "2026-01-08"),
+                   f"3 reviews retains {d(e3, '2026-01-08'):.1f} vs "
+                   f"1 review {d(e1, '2026-01-08'):.1f} after 7d"))
+
+    checks.append(("no_decay_same_day", d(e1, "2026-01-01") == 80.0,
+                   f"got {d(e1, '2026-01-01')}"))
+
+    store: dict = {}
+    first = mastery.record_review(store, "L", "Skill A", 70, "2026-01-01")
+    checks.append(("first_review_weighted", first["mastery"] == 49,
+                   f"0.3*0 + 0.7*70 -> {first['mastery']}, expected 49"))
+    second = mastery.record_review(store, "L", "Skill A", 100, "2026-01-02")
+    checks.append(("reviews_increment", second["reviews"] == 2,
+                   f"got {second['reviews']}"))
+    checks.append(("mastery_clamped", 0 <= second["mastery"] <= 100,
+                   f"got {second['mastery']}"))
+
+    store2 = {"L": {
+        "Learned then forgot": {"mastery": 80, "last_reviewed": "2026-01-01", "reviews": 1},
+        "Never mastered":      {"mastery": 45, "last_reviewed": "2026-01-01", "reviews": 1},
+        "Fresh and strong":    {"mastery": 90, "last_reviewed": "2026-01-29", "reviews": 3},
+    }}
+    due = mastery.due_refreshers(store2, "L", "2026-01-31")
+    checks.append(("due_flags_learned_then_forgot", "Learned then forgot" in due,
+                   f"due={due}"))
+    checks.append(("due_skips_never_mastered", "Never mastered" not in due,
+                   f"due={due} - studying anew is the remediation loop's job"))
+    checks.append(("due_skips_fresh_skills", "Fresh and strong" not in due,
+                   f"due={due}"))
+
+    passed = sum(1 for _, p, _ in checks if p)
+    return {
+        "suite": "mastery",
+        "metric": "decay_model_correctness",
+        "passed": passed, "total": len(checks),
+        "score_pct": round(100 * passed / len(checks)) if checks else 0,
+        "cases": [{"name": n, "pass": p, "note": note} for n, p, note in checks],
+    }
+
+
+# --------------------------------------------------------------------------- #
 SUITES = {
     "decisions": run_decisions,
     "groundedness": run_groundedness,
     "manager": run_manager,
     "accessibility": run_accessibility,
+    "calendar": run_calendar,
+    "teachback": run_teachback,
+    "mastery": run_mastery,
 }
 
 

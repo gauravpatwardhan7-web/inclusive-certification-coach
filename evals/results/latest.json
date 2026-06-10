@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-06-10T13:03:10.593167+00:00",
+  "run_at": "2026-06-10T14:23:15.097311+00:00",
   "suites": [
     {
       "suite": "decisions",
@@ -26,7 +26,7 @@
           ],
           "got": {
             "action": "advance",
-            "reason": "Learner achieved a perfect score on all skill areas and is marked ready to proceed."
+            "reason": "You achieved a perfect score across all skill areas and are marked ready to move forward."
           },
           "pass_rate": "3/3"
         },
@@ -47,7 +47,7 @@
           ],
           "got": {
             "action": "loop",
-            "reason": "Your score is below the readiness target, so let\u2019s revisit your weaker areas before moving on."
+            "reason": "Your score is below the readiness threshold and you've only had one attempt; focus on the identified weak areas before retrying."
           },
           "pass_rate": "3/3"
         },
@@ -63,7 +63,7 @@
           ],
           "got": {
             "action": "escalate",
-            "reason": "After three attempts with scores stuck around 33\u201340% and persistent gaps in Azure storage and security, you\u2019d benefit from targeted coaching."
+            "reason": "You\u2019ve attempted three times with little improvement and remain below the readiness threshold."
           },
           "pass_rate": "3/3"
         },
@@ -84,7 +84,7 @@
           ],
           "got": {
             "action": "loop",
-            "reason": "Score is below the 75% readiness target with a single weak area; the learner shows improvement and ADHD suggests a supportive, focused review."
+            "reason": "Your score is below the readiness target, but you\u2019re showing improvement and just need focused practice on Azure security."
           },
           "pass_rate": "3/3"
         },
@@ -105,7 +105,7 @@
           ],
           "got": {
             "action": "advance",
-            "reason": "You achieved a perfect score with no weak areas and are marked ready."
+            "reason": "You achieved a perfect score across all skill areas and are marked ready for the next step."
           },
           "pass_rate": "3/3"
         },
@@ -121,7 +121,7 @@
           ],
           "got": {
             "action": "advance",
-            "reason": "You scored 75%, meeting the readiness threshold, with only one skill area needing further practice."
+            "reason": "The learner met the 75% readiness threshold with strong performance across three of four skill areas."
           },
           "pass_rate": "3/3"
         },
@@ -142,7 +142,7 @@
           ],
           "got": {
             "action": "advance",
-            "reason": "You\u2019ve demonstrated strong, consistent performance across all skill areas and met the readiness criteria."
+            "reason": "You\u2019ve consistently demonstrated mastery across all assessed skills and meet the readiness criteria, so you\u2019re ready to move on."
           },
           "pass_rate": "3/3"
         },
@@ -163,7 +163,7 @@
           ],
           "got": {
             "action": "loop",
-            "reason": "You\u2019re close to the target and showing steady improvement, so let\u2019s reinforce your understanding of Azure security with a focused refresh."
+            "reason": "Your score has steadily improved but is just below the 75% readiness threshold; let\u2019s focus on your weak area with shorter, targeted study sessions."
           },
           "pass_rate": "3/3"
         },
@@ -184,12 +184,12 @@
           ],
           "got": {
             "action": "loop",
-            "reason": "Your 0% score indicates you need to review the identified skill areas before advancing."
+            "reason": "Score of 0% on the first attempt indicates further review is needed in all identified weak areas."
           },
           "pass_rate": "3/3"
         }
       ],
-      "duration_s": 128.0
+      "duration_s": 119.2
     },
     {
       "suite": "groundedness",
@@ -221,7 +221,7 @@
         {
           "name": "planner_has_sessions",
           "pass": true,
-          "note": "19 sessions"
+          "note": "30 sessions"
         },
         {
           "name": "planner_skills_grounded",
@@ -264,7 +264,7 @@
           "note": "expected a non-empty 'note' explaining the refusal"
         }
       ],
-      "duration_s": 132.6
+      "duration_s": 108.8
     },
     {
       "suite": "manager",
@@ -299,7 +299,7 @@
           "note": "L-1003 status=needs_support"
         }
       ],
-      "duration_s": 17.8
+      "duration_s": 9.8
     },
     {
       "suite": "accessibility",
@@ -311,7 +311,7 @@
         {
           "name": "non_empty",
           "pass": true,
-          "note": "805 chars"
+          "note": "711 chars"
         },
         {
           "name": "no_markdown",
@@ -334,7 +334,192 @@
           "note": "literal 'AZ-204' should be spelled out for speech"
         }
       ],
-      "duration_s": 20.9
+      "duration_s": 18.7
+    },
+    {
+      "suite": "calendar",
+      "metric": "negotiation_correctness",
+      "passed": 10,
+      "total": 10,
+      "score_pct": 100,
+      "cases": [
+        {
+          "name": "light_feasible",
+          "pass": true,
+          "note": "feasible=True, unplaced=[]"
+        },
+        {
+          "name": "light_all_minutes_booked",
+          "pass": true,
+          "note": "booked 300 of 300"
+        },
+        {
+          "name": "light_no_meeting_overlap",
+          "pass": true,
+          "note": "0 blocks overlap meetings"
+        },
+        {
+          "name": "light_within_work_hours",
+          "pass": true,
+          "note": "0 blocks outside work hours"
+        },
+        {
+          "name": "light_daily_cap_respected",
+          "pass": true,
+          "note": "days over the 60-min policy cap: []"
+        },
+        {
+          "name": "light_blocks_cited",
+          "pass": true,
+          "note": "0 blocks missing a source_id"
+        },
+        {
+          "name": "packed_infeasible",
+          "pass": true,
+          "note": "feasible=False"
+        },
+        {
+          "name": "packed_shortfall_detected",
+          "pass": true,
+          "note": "available=120, required=300"
+        },
+        {
+          "name": "packed_manager_message",
+          "pass": true,
+          "note": "expected a non-empty evidence-based message to the manager"
+        },
+        {
+          "name": "packed_offers_options",
+          "pass": true,
+          "note": "4 trade-off options offered"
+        }
+      ],
+      "duration_s": 54.0
+    },
+    {
+      "suite": "teachback",
+      "metric": "grading_quality",
+      "passed": 12,
+      "total": 12,
+      "score_pct": 100,
+      "cases": [
+        {
+          "name": "T1-complete-explanation_understanding",
+          "pass": true,
+          "note": "expected >= 60, got 90"
+        },
+        {
+          "name": "T1-complete-explanation_no_misconception",
+          "pass": true,
+          "note": "unexpected misconception: ''"
+        },
+        {
+          "name": "T1-complete-explanation_one_follow_up",
+          "pass": true,
+          "note": "expected a follow-up question"
+        },
+        {
+          "name": "T1-complete-explanation_cited",
+          "pass": true,
+          "note": "expected a KB source_id on the grade"
+        },
+        {
+          "name": "T2-incomplete-explanation_names_the_gap",
+          "pass": true,
+          "note": "expected non-empty concepts_missing"
+        },
+        {
+          "name": "T2-incomplete-explanation_one_follow_up",
+          "pass": true,
+          "note": "expected a follow-up question"
+        },
+        {
+          "name": "T2-incomplete-explanation_cited",
+          "pass": true,
+          "note": "expected a KB source_id on the grade"
+        },
+        {
+          "name": "T3-misconception-flagged_low_score",
+          "pass": true,
+          "note": "expected <= 45, got 20"
+        },
+        {
+          "name": "T3-misconception-flagged_misconception_flagged",
+          "pass": true,
+          "note": "expected the misconception to be flagged"
+        },
+        {
+          "name": "T3-misconception-flagged_one_follow_up",
+          "pass": true,
+          "note": "expected a follow-up question"
+        },
+        {
+          "name": "T3-misconception-flagged_cited",
+          "pass": true,
+          "note": "expected a KB source_id on the grade"
+        },
+        {
+          "name": "complete_outscores_incomplete",
+          "pass": true,
+          "note": "T1=90 vs T2=40"
+        }
+      ],
+      "duration_s": 89.7
+    },
+    {
+      "suite": "mastery",
+      "metric": "decay_model_correctness",
+      "passed": 9,
+      "total": 9,
+      "score_pct": 100,
+      "cases": [
+        {
+          "name": "halves_after_one_half_life",
+          "pass": true,
+          "note": "80 after 7d (HL 7d) -> 40.0, expected 40"
+        },
+        {
+          "name": "spacing_slows_decay",
+          "pass": true,
+          "note": "3 reviews retains 67.3 vs 1 review 40.0 after 7d"
+        },
+        {
+          "name": "no_decay_same_day",
+          "pass": true,
+          "note": "got 80.0"
+        },
+        {
+          "name": "first_review_weighted",
+          "pass": true,
+          "note": "0.3*0 + 0.7*70 -> 49, expected 49"
+        },
+        {
+          "name": "reviews_increment",
+          "pass": true,
+          "note": "got 2"
+        },
+        {
+          "name": "mastery_clamped",
+          "pass": true,
+          "note": "got 83"
+        },
+        {
+          "name": "due_flags_learned_then_forgot",
+          "pass": true,
+          "note": "due=['Learned then forgot']"
+        },
+        {
+          "name": "due_skips_never_mastered",
+          "pass": true,
+          "note": "due=['Learned then forgot'] - studying anew is the remediation loop's job"
+        },
+        {
+          "name": "due_skips_fresh_skills",
+          "pass": true,
+          "note": "due=['Learned then forgot']"
+        }
+      ],
+      "duration_s": 0.0
     }
   ]
 }

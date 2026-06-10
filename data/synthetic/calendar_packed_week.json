@@ -1,0 +1,46 @@
+{
+  "_note": "100% SYNTHETIC calendar shaped like Microsoft Graph calendarView output (simplified). No real people or meetings. A PACKED week: back-to-back meetings leave almost no usable study time - exercises the negotiator's pushback branch.",
+  "calendar_id": "CAL-PACKED-1",
+  "owner": "demo-learner",
+  "work_hours": {"start": "09:00", "end": "17:30"},
+  "days": [
+    {
+      "date": "2026-06-15", "weekday": "Monday",
+      "events": [
+        {"subject": "Incident review", "start": "09:00", "end": "12:00"},
+        {"subject": "Working lunch: vendor", "start": "12:30", "end": "15:00"},
+        {"subject": "Release go/no-go", "start": "15:20", "end": "17:30"}
+      ]
+    },
+    {
+      "date": "2026-06-16", "weekday": "Tuesday",
+      "events": [
+        {"subject": "Quarterly planning", "start": "09:00", "end": "13:00"},
+        {"subject": "Customer escalations", "start": "13:30", "end": "17:30"}
+      ]
+    },
+    {
+      "date": "2026-06-17", "weekday": "Wednesday",
+      "events": [
+        {"subject": "On-site workshop", "start": "09:00", "end": "12:30"},
+        {"subject": "Workshop continued", "start": "13:00", "end": "17:30"}
+      ]
+    },
+    {
+      "date": "2026-06-18", "weekday": "Thursday",
+      "events": [
+        {"subject": "Hiring panel", "start": "09:00", "end": "11:30"},
+        {"subject": "Prod deployment window", "start": "11:50", "end": "15:00"},
+        {"subject": "Stakeholder readout", "start": "15:20", "end": "17:30"}
+      ]
+    },
+    {
+      "date": "2026-06-19", "weekday": "Friday",
+      "events": [
+        {"subject": "All-hands", "start": "09:00", "end": "12:00"},
+        {"subject": "Team offsite planning", "start": "12:30", "end": "16:00"},
+        {"subject": "Week wrap-up", "start": "16:20", "end": "17:30"}
+      ]
+    }
+  ]
+}

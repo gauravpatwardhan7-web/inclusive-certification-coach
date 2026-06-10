@@ -2,7 +2,7 @@
 
 A multi-agent enterprise learning system for the **Microsoft Agents League — Reasoning Agents** track. It helps organisations run internal certification programmes, designed **accessibility-first** so that employees with disabilities (neurodivergent, cognitive, low-vision) get certification prep that adapts to how they actually work.
 
-> **Status:** all 5 agents built, grounded via Foundry IQ, with a **real bounded reasoning loop** (focused remediation on weak areas, escalation after stalled attempts), deterministic guardrails around every LLM decision, a visible reasoning trace down to the retrieved chunks, screen-reader-first spoken output with browser read-aloud, a Streamlit demo, and gold-set evals (**32/32 checks, decisions verified 3× per case**). **Data:** 100% synthetic — no real people, no PII (identifiers like `L-1001`, `EMP-001`, `TEAM-A`).
+> **Status:** 7 agents built, grounded via Foundry IQ, with a **real bounded reasoning loop** (focused remediation on weak areas, escalation after stalled attempts), **calendar-negotiated study plans** that push back with evidence when the week has no time, **Socratic teach-back assessment** that grades understanding rather than option-picking, **per-skill memory decay** with spaced refreshers, deterministic guardrails around every LLM decision, a visible reasoning trace down to the retrieved chunks, screen-reader-first spoken output with browser read-aloud, a Streamlit demo, and gold-set evals (**63/63 checks across 7 suites, decisions verified 3× per case**). **Data:** 100% synthetic — no real people, no PII (identifiers like `L-1001`, `EMP-001`, `TEAM-A`).
 
 ---
 
@@ -17,16 +17,25 @@ The challenge scenario is an enterprise certification-learning system. Most impl
 
 ## Architecture
 
-Five agents: four in the per-learner reasoning loop, plus a team-level
-Manager Insights agent.
+Seven agents: five in the per-learner reasoning loop, plus a team-level
+Manager Insights agent, plus the Accessibility Narrator rendering layer —
+and a deterministic memory-decay model underneath.
 
 | Agent | Type | Job | Grounding |
 |---|---|---|---|
 | Learning Path Curator | workflow step | Map a certification goal to skills + cited modules, with per-module accommodation notes | Foundry IQ |
 | Study Plan Generator | workflow step | Turn the cited path into an accommodation-aware day-by-day schedule (block sizes, breaks, checkpoints) | Foundry IQ (pacing rules) |
+| Calendar Negotiator | hybrid reasoning | Book study blocks into the learner's REAL calendar gaps — or push back with evidence (needed vs available minutes, projected timeline, manager-ready message, trade-off options) when the week can't hold the plan | synthetic Graph-shaped calendar |
 | Assessment Agent | workflow step | Generate grounded, cited practice questions; score readiness; report weak areas | Foundry IQ |
+| Teach-back Assessor | Socratic reasoning | Grade the learner's own-words explanation: concepts covered/missing, misconceptions, one targeted follow-up probe; feeds the orchestrator like any score | Foundry IQ |
 | Orchestrator | reasoning loop | Reason over score, weak areas, history, and accessibility profile to decide: advance, loop back to weak areas, or escalate to a human | — |
 | Manager Insights | reasoning / analytics | Roll up a team's progress: per-learner status, team readiness %, recommended actions | synthetic team records |
+
+**Memory decay model** (`src/mastery.py`, pure code): every skill's mastery
+decays with a half-life that doubles per review (the spacing effect). Skills
+that were learned but are fading get flagged for a short refresher *before*
+they're forgotten; skills never mastered go through the remediation loop
+instead. The coach reasons longitudinally, not per-session.
 
 **Microsoft IQ layer:** Foundry IQ (Azure AI Search), grounded retrieval with citations.
 
@@ -79,9 +88,38 @@ LLMs misfire; a coach must not. Three layers keep the demo and the decisions saf
    not ready) always reaches a human; advancing clears `focus_next`; looping
    always names what to revisit. Corrections are recorded in
    `guardrail_notes` and shown in the trace — visible, not silent.
-3. **Hybrid symbolic + LLM reasoning** (`src/agents/manager_insights.py`) —
-   readiness arithmetic (who meets the threshold, team %) is computed in
-   Python; the LLM spends its reasoning on trends, support needs, and actions.
+3. **Hybrid symbolic + LLM reasoning** (`src/agents/manager_insights.py`,
+   `src/agents/calendar_negotiator.py`, `src/mastery.py`) — arithmetic and
+   interval math are computed in Python (readiness %, calendar gaps, slot
+   allocation, memory decay); the LLM spends its reasoning where judgment
+   lives: pacing policy, negotiation narrative, trends, support needs. A
+   booked study block cannot overlap a meeting *by construction*.
+
+### Why employees would actually use this
+
+Three features aimed at the real reasons certifications stall — time,
+shallow assessment, and forgetting:
+
+- **Calendar-negotiated study plans** (`src/agents/calendar_negotiator.py`).
+  A plan that ignores your meetings is a plan you won't follow. The negotiator
+  finds genuine gaps in a (Graph-shaped, synthetic) work calendar, books
+  accommodation-sized blocks into them, and — when the week simply doesn't
+  have the time — refuses to pretend: it shows needed-vs-available minutes,
+  projects the realistic timeline, drafts an evidence-based note to the
+  manager, and lays out trade-off options. The agent advocates for the
+  learner instead of guilt-tripping them.
+- **Teach-back assessment** (`src/agents/teachback.py`). Multiple choice
+  measures recognition; explaining measures understanding. The learner
+  explains a skill in their own words (typed or dictated — no answer grid to
+  visually scan), and the agent grades meaning against the KB: concepts
+  covered, the *specific* missing piece, any misconception to un-learn, and
+  one Socratic follow-up aimed at the biggest gap. The final grade flows into
+  the orchestrator exactly like a quiz score.
+- **Memory that decays honestly** (`src/mastery.py` + the "Your memory" panel).
+  Passing Storage three weeks ago is not knowing Storage today. Mastery decays
+  on a per-skill half-life that doubles with each review, and the coach offers
+  a short refresher at the learned-then-fading moment — when review is cheap —
+  rather than re-teaching after the knowledge is gone.
 
 ### Accessibility & voice
 
@@ -128,6 +166,8 @@ All synthetic.
 
 - `data/knowledge_base/` — certification guides used for grounded retrieval via Foundry IQ: `az204_enablement_guide.md` (`KB-AZ204-001`) and `az900_fundamentals_guide.md` (`KB-AZ900-001`). To use AZ-900 in the demo, index the new file into your Azure AI Search index; until then the Curator will (correctly) refuse it rather than invent a path — that refusal is itself covered by the groundedness eval.
 - `data/synthetic/team_records.json` — fabricated team (`TEAM-A`) of learner records (`L-1001` / `EMP-001` …) consumed by the Manager Insights agent.
+- `data/synthetic/calendar_light_week.json` / `calendar_packed_week.json` — Microsoft Graph-shaped synthetic work calendars (no real meetings) consumed by the Calendar Negotiator; the packed week exercises the pushback branch.
+- `data/state/mastery_demo.json` — seeded per-skill memory state for the demo learner (past-dated reviews so decay is visible); updated automatically as assessments are scored.
 
 Identifiers are fabricated for demonstration only. No real people, no PII.
 
@@ -158,6 +198,12 @@ python -m evals.run_evals --suite decisions     # reasoning only, no Search reso
 python -m evals.run_evals --suite manager       # reasoning only, no Search resource needed
 ```
 
+Three further suites cover the newer agents:
+
+- **`calendar`** — negotiation correctness: booked blocks never overlap meetings, stay inside work hours and the daily accommodation cap, and every required minute fits on a light week; a packed week must be declared infeasible with a manager-ready message and ≥2 trade-off options.
+- **`teachback`** — grading quality: a complete explanation scores well (and outscores an incomplete one — a relative check robust to grader strictness), an incomplete one names the missing concepts, a wrong one gets its misconception flagged and a low score, and every grade carries one follow-up question and a KB citation.
+- **`mastery`** — decay-model correctness (pure code, no LLM): half-life math, the spacing effect, review blending and clamping, and due-refresher logic (learned-then-forgotten is due; never-mastered is remediation's job, not a refresher).
+
 Latest full run (decisions repeated 3× per case — a case passes only if **all** runs pass):
 
 | Suite | Metric | Result |
@@ -166,6 +212,9 @@ Latest full run (decisions repeated 3× per case — a case passes only if **all
 | `groundedness` | citation fidelity (incl. unknown-cert refusal) | **13/13** |
 | `manager` | team rollup accuracy | **5/5** |
 | `accessibility` | spoken output quality | **5/5** |
+| `calendar` | negotiation correctness | **10/10** |
+| `teachback` | grading quality | **12/12** |
+| `mastery` | decay-model correctness | **9/9** |
 
 See [`evals/README.md`](evals/README.md) for details; results land in `evals/results/latest.json`.
 
@@ -179,6 +228,7 @@ See [`evals/README.md`](evals/README.md) for details; results land in `evals/res
 | Legible reasoning | Trace shows every step, the retrieved chunks with relevance scores, and the orchestrator's `signals_considered` / `alternatives_rejected` |
 | Grounding (Foundry IQ) | Every module, session, and question cites a KB `source_id`; unknown certs are refused, and an eval proves it |
 | Reliability | Structured output + parse retry; deterministic guardrails with visible `guardrail_notes`; hybrid code/LLM arithmetic |
-| Human-in-the-loop | Stalled learners always escalate to a human coach — enforced in code, not just prompted |
-| Responsible AI | Synthetic data only, accommodations framed as support (never judgement), AI disclosure |
-| Evidence | 4 gold-set suites, 32 checks, decisions verified 3× per case |
+| Human-in-the-loop | Stalled learners always escalate to a human coach — enforced in code, not just prompted; infeasible weeks produce a manager-ready negotiation, not silent failure |
+| Genuine user value | Study blocks booked into real calendar gaps; assessment that grades understanding (teach-back); refreshers timed to memory decay |
+| Responsible AI | Synthetic data only, accommodations framed as support (never judgement), the agent advocates for the learner with evidence, AI disclosure |
+| Evidence | 7 gold-set suites, 63 checks, decisions verified 3× per case |

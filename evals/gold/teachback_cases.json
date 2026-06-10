@@ -1,0 +1,22 @@
+{
+  "description": "Gold cases for the Teach-back Assessor. Each fixes a learner explanation of an AZ-204 skill area and asserts properties of the grading: a complete explanation scores well; an incomplete one names what is missing; a wrong one gets its misconception flagged; every grade probes with exactly one follow-up question and cites its KB source. The complete explanation must also outscore the incomplete one (relative check - robust to grader strictness).",
+  "certification": "AZ-204",
+  "skill_area": "Implement Azure security (auth, Key Vault)",
+  "cases": [
+    {
+      "id": "T1-complete-explanation",
+      "explanation": "Securing an Azure app means two things. First, authentication and authorization: users and services sign in through Microsoft Entra ID, and the app gets permissions through roles rather than everyone having full access. Second, secrets management: connection strings, API keys and certificates never live in code or config files - they go in Azure Key Vault, and the app reads them at runtime. Best of all, the app can use a managed identity to authenticate to Key Vault, so there is no secret needed to fetch the secrets.",
+      "expect": {"min_understanding_pct": 60, "no_misconception": true}
+    },
+    {
+      "id": "T2-incomplete-explanation",
+      "explanation": "Azure security is about Key Vault. You put your secrets in Key Vault.",
+      "expect": {"concepts_missing_nonempty": true}
+    },
+    {
+      "id": "T3-misconception-flagged",
+      "explanation": "You don't really need Key Vault - storing connection strings in plain text in the app's configuration is fine because Azure datacenters are physically secure. Authentication is only needed for external users, not for services talking to each other.",
+      "expect": {"misconception_nonempty": true, "max_understanding_pct": 45}
+    }
+  ]
+}

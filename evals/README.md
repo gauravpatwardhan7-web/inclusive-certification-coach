@@ -11,6 +11,9 @@ python -m evals.run_evals --repeat 3       # decisions: 3 runs per case, all mus
 python -m evals.run_evals --suite decisions
 python -m evals.run_evals --suite groundedness
 python -m evals.run_evals --suite manager
+python -m evals.run_evals --suite calendar
+python -m evals.run_evals --suite teachback
+python -m evals.run_evals --suite mastery     # pure code, instant, no LLM
 ```
 
 Each run prints a pass/fail scorecard and writes machine-readable results to
@@ -86,11 +89,51 @@ spelled out rather than printed as `AZ-204`.
 
 Reasoning model only — no Search resource needed. Metric: **spoken output quality**.
 
+### `calendar` — negotiation correctness
+
+Fixture: [`gold/calendar_fixture.json`](gold/calendar_fixture.json) (a fixed
+5-day, 300-minute study plan) run against both synthetic calendars.
+
+- **Light week** (plenty of gaps): every required minute must be booked,
+  no block may overlap a meeting or fall outside work hours, no day may
+  exceed the accommodation daily cap, every block carries its `source_id`.
+- **Packed week** (~120 usable minutes): the agent must declare the week
+  infeasible, detect the shortfall, produce a non-empty evidence-based
+  `message_to_manager`, and offer at least two trade-off options.
+
+Gap-finding and slot allocation are deterministic code; the LLM contributes
+the pacing policy and the negotiation narrative, both behind deterministic
+rails. Metric: **negotiation correctness**. LLM only — no Search needed.
+
+### `teachback` — grading quality
+
+Gold set: [`gold/teachback_cases.json`](gold/teachback_cases.json) (3 fixed
+learner explanations of an AZ-204 skill area).
+
+- A **complete** explanation scores ≥ 60 with no misconception flagged;
+- an **incomplete** one names the missing concepts;
+- a **wrong** one gets its misconception flagged and scores ≤ 45;
+- every grade asks exactly one follow-up question and cites a KB source;
+- and the complete explanation must **outscore** the incomplete one — a
+  relative check that stays robust however strict the grader feels that day.
+
+Needs Foundry IQ retrieval (AZ-204 content). Metric: **grading quality**.
+
+### `mastery` — decay-model correctness
+
+Pure code, no LLM, no Search — runs in milliseconds. Asserts the memory
+model's math: mastery halves after one half-life; more reviews mean slower
+decay (the spacing effect); review results blend with retained mastery and
+clamp to [0, 100]; and due-refresher logic flags learned-then-forgotten
+skills only (never-mastered skills belong to the remediation loop, fresh
+skills aren't nagged). Metric: **decay-model correctness**.
+
 ## Latest results
 
-All suites pass: `decisions` 9/9 with `--repeat 3` (27/27 individual runs),
-`groundedness` 13/13 (incl. the unknown-cert refusal), `manager` 5/5,
-`accessibility` 5/5. See
+All suites pass — 63/63 checks: `decisions` 9/9 with `--repeat 3` (27/27
+individual runs), `groundedness` 13/13 (incl. the unknown-cert refusal),
+`manager` 5/5, `accessibility` 5/5, `calendar` 10/10, `teachback` 12/12,
+`mastery` 9/9. See
 `results/latest.json` for the most recent run (per-suite pass/fail + aggregate
 metrics, written on every invocation).
 

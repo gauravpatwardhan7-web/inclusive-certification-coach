@@ -1,0 +1,46 @@
+{
+  "_note": "100% SYNTHETIC calendar shaped like Microsoft Graph calendarView output (simplified). No real people or meetings. A LIGHT week: plenty of usable gaps between meetings.",
+  "calendar_id": "CAL-LIGHT-1",
+  "owner": "demo-learner",
+  "work_hours": {"start": "09:00", "end": "17:30"},
+  "days": [
+    {
+      "date": "2026-06-15", "weekday": "Monday",
+      "events": [
+        {"subject": "Team standup", "start": "09:30", "end": "10:00"},
+        {"subject": "Sprint planning", "start": "11:00", "end": "12:00"},
+        {"subject": "1:1 with manager", "start": "15:00", "end": "15:30"}
+      ]
+    },
+    {
+      "date": "2026-06-16", "weekday": "Tuesday",
+      "events": [
+        {"subject": "Team standup", "start": "09:30", "end": "10:00"},
+        {"subject": "Design review", "start": "13:00", "end": "14:00"}
+      ]
+    },
+    {
+      "date": "2026-06-17", "weekday": "Wednesday",
+      "events": [
+        {"subject": "Team standup", "start": "09:30", "end": "10:00"},
+        {"subject": "Customer call", "start": "10:30", "end": "11:30"},
+        {"subject": "Architecture sync", "start": "14:00", "end": "15:00"}
+      ]
+    },
+    {
+      "date": "2026-06-18", "weekday": "Thursday",
+      "events": [
+        {"subject": "Team standup", "start": "09:30", "end": "10:00"},
+        {"subject": "Demo prep", "start": "16:00", "end": "17:00"}
+      ]
+    },
+    {
+      "date": "2026-06-19", "weekday": "Friday",
+      "events": [
+        {"subject": "Team standup", "start": "09:30", "end": "10:00"},
+        {"subject": "Sprint review", "start": "11:00", "end": "12:00"},
+        {"subject": "Retro", "start": "13:00", "end": "13:45"}
+      ]
+    }
+  ]
+}

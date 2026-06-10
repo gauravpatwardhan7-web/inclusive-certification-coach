@@ -1,0 +1,19 @@
+{
+  "description": "Fixed study plan + expectations for the calendar negotiation suite. The plan is a fixture (not LLM-generated) so the suite is deterministic about what must fit: 5 days x 60 min = 300 required minutes in week one. The light synthetic week has far more than 300 usable minutes (must be feasible); the packed week has ~120 (must push back).",
+  "study_plan": {
+    "certification": "AZ-204",
+    "total_days": 24,
+    "daily_max_minutes": 60,
+    "block_minutes": 25,
+    "sessions": [
+      {"day": 1, "skill_area": "Develop Azure compute solutions (Functions, App Service)", "minutes": 60, "blocks": "2 x 25 min + 1 x 10", "accommodation_note": "Short blocks with breaks.", "source_id": "KB-AZ204-001"},
+      {"day": 2, "skill_area": "Develop for Azure storage (Blob, Cosmos DB)", "minutes": 60, "blocks": "2 x 25 min + 1 x 10", "accommodation_note": "Plain-language summary first.", "source_id": "KB-AZ204-001"},
+      {"day": 3, "skill_area": "Implement Azure security (auth, Key Vault)", "minutes": 60, "blocks": "2 x 25 min + 1 x 10", "accommodation_note": "Plain-language summary first.", "source_id": "KB-AZ204-001"},
+      {"day": 4, "skill_area": "Monitor, troubleshoot, optimize", "minutes": 60, "blocks": "2 x 25 min + 1 x 10", "accommodation_note": "Short blocks with breaks.", "source_id": "KB-AZ204-001"},
+      {"day": 5, "skill_area": "Connect to and consume services (API Management, event/message)", "minutes": 60, "blocks": "2 x 25 min + 1 x 10", "accommodation_note": "Short blocks with breaks.", "source_id": "KB-AZ204-001"}
+    ],
+    "checkpoints": ["Practice assessment at end of week 1"],
+    "note": ""
+  },
+  "accessibility_profile": "Has ADHD; struggles to focus in long study sessions."
+}

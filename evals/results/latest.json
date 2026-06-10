@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-06-08T04:19:14.986945+00:00",
+  "run_at": "2026-06-10T02:53:43.285010+00:00",
   "suites": [
     {
       "suite": "decisions",
@@ -25,7 +25,7 @@
           ],
           "got": {
             "action": "advance",
-            "reason": "Learner demonstrated mastery across all tested skill areas with a perfect score on the first attempt."
+            "reason": "The learner achieved a perfect score and is marked ready to proceed to the next module."
           }
         },
         {
@@ -45,7 +45,7 @@
           ],
           "got": {
             "action": "loop",
-            "reason": "Your score indicates you need more practice on Azure storage and security before moving on."
+            "reason": "Your score shows more practice is needed in Azure storage and security before advancing."
           }
         },
         {
@@ -60,7 +60,7 @@
           ],
           "got": {
             "action": "escalate",
-            "reason": "The learner has attempted three times without sufficient improvement and is still not ready."
+            "reason": "You\u2019ve attempted this assessment three times with persistent challenges in key areas, so a human coach can provide targeted support."
           }
         },
         {
@@ -80,7 +80,7 @@
           ],
           "got": {
             "action": "loop",
-            "reason": "You\u2019re close to passing and only missed the Azure security area, so a focused review should help you improve."
+            "reason": "You\u2019re close but need more practice on Implement Azure security. A targeted review with shorter sessions will help reinforce this skill."
           }
         },
         {
@@ -100,7 +100,7 @@
           ],
           "got": {
             "action": "advance",
-            "reason": "You achieved a perfect score across all skill areas, showing mastery and readiness to move forward."
+            "reason": "You demonstrated mastery across all skill areas with a perfect score on your first attempt."
           }
         },
         {
@@ -115,146 +115,11 @@
           ],
           "got": {
             "action": "advance",
-            "reason": "You achieved a passing score and are marked ready to progress."
+            "reason": "You\u2019ve met the passing criteria and are marked ready to progress."
           }
         }
       ],
-      "duration_s": 34.9
-    },
-    {
-      "suite": "groundedness",
-      "metric": "citation_fidelity",
-      "passed": 11,
-      "total": 11,
-      "score_pct": 100,
-      "cases": [
-        {
-          "name": "curator_has_modules",
-          "pass": true,
-          "note": "5 modules"
-        },
-        {
-          "name": "curator_hours_grounded",
-          "pass": true,
-          "note": "0 modules with hallucinated hours"
-        },
-        {
-          "name": "curator_skills_grounded",
-          "pass": true,
-          "note": "0 modules with ungrounded skill areas"
-        },
-        {
-          "name": "curator_all_cited",
-          "pass": true,
-          "note": "0 modules missing a source_id"
-        },
-        {
-          "name": "planner_has_sessions",
-          "pass": true,
-          "note": "24 sessions"
-        },
-        {
-          "name": "planner_skills_grounded",
-          "pass": true,
-          "note": "0 sessions with ungrounded skill areas"
-        },
-        {
-          "name": "planner_all_cited",
-          "pass": true,
-          "note": "0 sessions missing a source_id"
-        },
-        {
-          "name": "planner_respects_daily_load",
-          "pass": true,
-          "note": "0 days exceed the stated daily max"
-        },
-        {
-          "name": "assessor_has_questions",
-          "pass": true,
-          "note": "3 questions"
-        },
-        {
-          "name": "assessor_all_cited",
-          "pass": true,
-          "note": "0 questions missing a source_id"
-        },
-        {
-          "name": "assessor_skills_grounded",
-          "pass": true,
-          "note": "0 questions with ungrounded skill areas"
-        }
-      ],
-      "duration_s": 108.8
-    },
-    {
-      "suite": "manager",
-      "metric": "team_rollup_accuracy",
-      "passed": 5,
-      "total": 5,
-      "score_pct": 100,
-      "cases": [
-        {
-          "name": "all_learners_covered",
-          "pass": true,
-          "note": "covered ['L-1001', 'L-1002', 'L-1003', 'L-1004', 'L-1005'] vs ['L-1001', 'L-1002', 'L-1003', 'L-1004', 'L-1005']"
-        },
-        {
-          "name": "valid_statuses",
-          "pass": true,
-          "note": "invalid: []"
-        },
-        {
-          "name": "ready_set_correct",
-          "pass": true,
-          "note": "expected ready=['L-1001', 'L-1004'], got ['L-1001', 'L-1004']"
-        },
-        {
-          "name": "team_pct_correct",
-          "pass": true,
-          "note": "expected 40%, got 40"
-        },
-        {
-          "name": "stalled_learner_supported",
-          "pass": true,
-          "note": "L-1003 status=needs_support"
-        }
-      ],
-      "duration_s": 18.1
-    },
-    {
-      "suite": "accessibility",
-      "metric": "spoken_output_quality",
-      "passed": 5,
-      "total": 5,
-      "score_pct": 100,
-      "cases": [
-        {
-          "name": "non_empty",
-          "pass": true,
-          "note": "680 chars"
-        },
-        {
-          "name": "no_markdown",
-          "pass": true,
-          "note": "found markup chars: []"
-        },
-        {
-          "name": "no_percent_symbol",
-          "pass": true,
-          "note": "raw '%' present"
-        },
-        {
-          "name": "no_link_syntax",
-          "pass": true,
-          "note": "markdown link syntax present"
-        },
-        {
-          "name": "abbreviation_spelled_out",
-          "pass": true,
-          "note": "literal 'AZ-204' should be spelled out for speech"
-        }
-      ],
-      "duration_s": 14.7
+      "duration_s": 19.4
     }
   ]
 }

@@ -30,6 +30,8 @@ Manager Insights agent.
 
 **Microsoft IQ layer:** Foundry IQ (Azure AI Search), grounded retrieval with citations.
 
+**Reasoning patterns used:** grounded retrieval (every answer cited to Foundry IQ sources), an orchestrated decision loop (the Orchestrator reasons over score, weak areas, attempt history, and accessibility profile to choose advance / loop-to-weak-areas / escalate), human-in-the-loop escalation on repeated failure, and team-level reasoning (Manager Insights rolls per-learner state up to a readiness verdict). The reasoning model (o4-mini) surfaces its step-by-step trace in the UI rather than hiding it.
+
 ```
 Learner goal (cert + role + accessibility profile)
    -> Curator         : Foundry IQ retrieval -> cited, accommodation-aware learning path

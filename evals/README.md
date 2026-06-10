@@ -14,6 +14,7 @@ python -m evals.run_evals --suite manager
 python -m evals.run_evals --suite calendar
 python -m evals.run_evals --suite teachback
 python -m evals.run_evals --suite mastery     # pure code, instant, no LLM
+python -m evals.run_evals --suite advocacy
 ```
 
 Each run prints a pass/fail scorecard and writes machine-readable results to
@@ -128,12 +129,31 @@ clamp to [0, 100]; and due-refresher logic flags learned-then-forgotten
 skills only (never-mastered skills belong to the remediation loop, fresh
 skills aren't nagged). Metric: **decay-model correctness**.
 
+### `advocacy` — consent-boundary integrity
+
+The learner controls what the manager sees; this suite proves the boundary
+holds:
+
+- **redaction (deterministic)**: a non-consenting learner's accessibility
+  profile is replaced with the private marker before any manager-facing model
+  call; a consenting learner's profile passes through; performance evidence
+  (scores, attempts) is never touched by redaction;
+- **leak detector (deterministic)**: catches profile content-words in a
+  draft, passes clean text, and treats a "none" profile as unleakable;
+- **advocacy draft (LLM + rails)**: with consent off, the drafted
+  manager note contains zero profile terms (structurally guaranteed - the
+  model is never shown the context - plus the leak check as defence in
+  depth), is substantive, and carries its disclosure ledger
+  (`what_was_shared` / `what_was_withheld`).
+
+Metric: **consent-boundary integrity**. LLM only — no Search needed.
+
 ## Latest results
 
-All suites pass — 63/63 checks: `decisions` 9/9 with `--repeat 3` (27/27
+All suites pass — 72/72 checks: `decisions` 9/9 with `--repeat 3` (27/27
 individual runs), `groundedness` 13/13 (incl. the unknown-cert refusal),
 `manager` 5/5, `accessibility` 5/5, `calendar` 10/10, `teachback` 12/12,
-`mastery` 9/9. See
+`mastery` 9/9, `advocacy` 9/9. See
 `results/latest.json` for the most recent run (per-suite pass/fail + aggregate
 metrics, written on every invocation).
 

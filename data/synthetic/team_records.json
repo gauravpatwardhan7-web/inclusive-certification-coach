@@ -1,5 +1,5 @@
 {
-  "_note": "100% SYNTHETIC. No real people, no PII. Identifiers are fabricated (L-#### learner id, EMP-### employee id, TEAM-? team id). Used by the Manager Insights agent to produce a team-readiness rollup. Scores are practice-assessment percentages; readiness threshold is 75% per the knowledge base (KB-AZ204-001).",
+  "_note": "100% SYNTHETIC. No real people, no PII. Identifiers are fabricated (L-#### learner id, EMP-### employee id, TEAM-? team id). Used by the Manager Insights agent to produce a team-readiness rollup. Scores are practice-assessment percentages; readiness threshold is 75% per the knowledge base (KB-AZ204-001). Each learner's 'consent' controls what the manager may see: accessibility profiles are PRIVATE unless share_accessibility_profile is true - redaction is enforced in code (src/agents/advocate.py) before any manager-facing agent runs.",
   "team_id": "TEAM-A",
   "team_name": "Cloud Platform Squad (synthetic)",
   "certification": "AZ-204",
@@ -11,9 +11,14 @@
       "role": "Cloud Engineer",
       "attempts": 1,
       "latest_score_pct": 92,
-      "score_history": [92],
+      "score_history": [
+        92
+      ],
       "weak_areas": [],
-      "accessibility_profile": "none"
+      "accessibility_profile": "none",
+      "consent": {
+        "share_accessibility_profile": true
+      }
     },
     {
       "learner_id": "L-1002",
@@ -21,9 +26,17 @@
       "role": "Cloud Engineer",
       "attempts": 2,
       "latest_score_pct": 67,
-      "score_history": [55, 67],
-      "weak_areas": ["Implement Azure security"],
-      "accessibility_profile": "Has ADHD; struggles to focus in long study sessions."
+      "score_history": [
+        55,
+        67
+      ],
+      "weak_areas": [
+        "Implement Azure security"
+      ],
+      "accessibility_profile": "Has ADHD; struggles to focus in long study sessions.",
+      "consent": {
+        "share_accessibility_profile": false
+      }
     },
     {
       "learner_id": "L-1003",
@@ -31,9 +44,20 @@
       "role": "Backend Developer",
       "attempts": 3,
       "latest_score_pct": 40,
-      "score_history": [38, 42, 40],
-      "weak_areas": ["Develop for Azure storage", "Implement Azure security", "Connect to and consume services"],
-      "accessibility_profile": "none"
+      "score_history": [
+        38,
+        42,
+        40
+      ],
+      "weak_areas": [
+        "Develop for Azure storage",
+        "Implement Azure security",
+        "Connect to and consume services"
+      ],
+      "accessibility_profile": "none",
+      "consent": {
+        "share_accessibility_profile": true
+      }
     },
     {
       "learner_id": "L-1004",
@@ -41,9 +65,16 @@
       "role": "Cloud Engineer",
       "attempts": 1,
       "latest_score_pct": 78,
-      "score_history": [78],
-      "weak_areas": ["Monitor, troubleshoot, optimize"],
-      "accessibility_profile": "Low vision; uses a screen reader."
+      "score_history": [
+        78
+      ],
+      "weak_areas": [
+        "Monitor, troubleshoot, optimize"
+      ],
+      "accessibility_profile": "Low vision; uses a screen reader.",
+      "consent": {
+        "share_accessibility_profile": true
+      }
     },
     {
       "learner_id": "L-1005",
@@ -51,9 +82,17 @@
       "role": "Backend Developer",
       "attempts": 2,
       "latest_score_pct": 71,
-      "score_history": [60, 71],
-      "weak_areas": ["Develop Azure compute solutions"],
-      "accessibility_profile": "none"
+      "score_history": [
+        60,
+        71
+      ],
+      "weak_areas": [
+        "Develop Azure compute solutions"
+      ],
+      "accessibility_profile": "none",
+      "consent": {
+        "share_accessibility_profile": true
+      }
     }
   ]
 }

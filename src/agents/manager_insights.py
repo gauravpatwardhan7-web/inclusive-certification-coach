@@ -42,6 +42,12 @@ who is improving should be framed supportively (more time / lighter pacing),
 never penalised. Use plain, respectful language a manager can act on. Do not
 expose the accessibility profile as a judgement; reflect it only as a support need.
 
+CONSENT BOUNDARY: if a learner's accessibility_profile reads
+"(private - not shared with manager)", that learner has NOT consented to share
+it. Do not speculate about why they might be struggling, do not hint that
+private context exists. Frame their status purely on scores, trend, and
+attempts.
+
 Output ONLY valid JSON:
 {
   "team_id": "<id>",
@@ -77,8 +83,13 @@ def compute_team_facts(team: dict) -> dict:
 
 
 def team_insights(team: dict | None = None) -> dict:
-    """Produce a manager-facing team-readiness rollup."""
+    """Produce a manager-facing team-readiness rollup (consent-redacted)."""
+    from src.agents.advocate import redact_team
+
     team = team or load_team()
+    # Consent enforced in code BEFORE the model sees anything: profiles of
+    # non-consenting learners are stripped, so they cannot leak.
+    team = redact_team(team)
     facts = compute_team_facts(team)
     user_msg = (
         f"DETERMINISTIC FACTS (computed in code - treat as ground truth):\n"

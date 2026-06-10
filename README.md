@@ -2,7 +2,7 @@
 
 A multi-agent enterprise learning system for the **Microsoft Agents League — Reasoning Agents** track. It helps organisations run internal certification programmes, designed **accessibility-first** so that employees with disabilities (neurodivergent, cognitive, low-vision) get certification prep that adapts to how they actually work.
 
-> **Status:** 7 agents built, grounded via Foundry IQ, with a **real bounded reasoning loop** (focused remediation on weak areas, escalation after stalled attempts), **calendar-negotiated study plans** that push back with evidence when the week has no time, **Socratic teach-back assessment** that grades understanding rather than option-picking, **per-skill memory decay** with spaced refreshers, deterministic guardrails around every LLM decision, a visible reasoning trace down to the retrieved chunks, screen-reader-first spoken output with browser read-aloud, a Streamlit demo, and gold-set evals (**63/63 checks across 7 suites, decisions verified 3× per case**). **Data:** 100% synthetic — no real people, no PII (identifiers like `L-1001`, `EMP-001`, `TEAM-A`).
+> **Status:** 8 agents built, grounded via Foundry IQ, with a **real bounded reasoning loop** (focused remediation on weak areas, escalation after stalled attempts), **calendar-negotiated study plans** that push back with evidence when the week has no time, **Socratic teach-back assessment** that grades understanding rather than option-picking, **per-skill memory decay** with spaced refreshers, **consent-boundary advocacy** (the learner controls what the manager sees; redaction enforced in code), deterministic guardrails around every LLM decision, a visible reasoning trace down to the retrieved chunks, screen-reader-first spoken output with browser read-aloud, a Streamlit demo, and gold-set evals (**72/72 checks across 8 suites, decisions verified 3× per case**). **Data:** 100% synthetic — no real people, no PII (identifiers like `L-1001`, `EMP-001`, `TEAM-A`).
 
 ---
 
@@ -29,7 +29,8 @@ and a deterministic memory-decay model underneath.
 | Assessment Agent | workflow step | Generate grounded, cited practice questions; score readiness; report weak areas | Foundry IQ |
 | Teach-back Assessor | Socratic reasoning | Grade the learner's own-words explanation: concepts covered/missing, misconceptions, one targeted follow-up probe; feeds the orchestrator like any score | Foundry IQ |
 | Orchestrator | reasoning loop | Reason over score, weak areas, history, and accessibility profile to decide: advance, loop back to weak areas, or escalate to a human | — |
-| Manager Insights | reasoning / analytics | Roll up a team's progress: per-learner status, team readiness %, recommended actions | synthetic team records |
+| Manager Insights | reasoning / analytics | Roll up a team's progress: per-learner status, team readiness %, recommended actions — over consent-redacted records only | synthetic team records (redacted in code) |
+| Advocate | consent-boundary reasoning | Draft evidence-based notes to the manager ON THE LEARNER'S BEHALF; enforce in code that non-consenting learners' accessibility context never reaches a manager-facing model | learner evidence + consent flags |
 
 **Memory decay model** (`src/mastery.py`, pure code): every skill's mastery
 decays with a half-life that doubles per review (the spacing effect). Skills
@@ -120,6 +121,14 @@ shallow assessment, and forgetting:
   on a per-skill half-life that doubles with each review, and the coach offers
   a short refresher at the learned-then-fading moment — when review is cheap —
   rather than re-teaching after the knowledge is gone.
+- **Consent-boundary advocacy** (`src/agents/advocate.py`). The learner
+  controls what the manager sees. Accessibility profiles are private by
+  default and redacted IN CODE before any manager-facing model call — the
+  model cannot leak what it never saw. When the learner wants something
+  (protected study time, more weeks, a lighter load), the Advocate drafts an
+  evidence-based note on their behalf, with a disclosure ledger (what the
+  note shares vs keeps private), a deterministic leak check as defence in
+  depth, and an explicit Approve step before anything counts as sent.
 
 ### Accessibility & voice
 
@@ -215,6 +224,7 @@ Latest full run (decisions repeated 3× per case — a case passes only if **all
 | `calendar` | negotiation correctness | **10/10** |
 | `teachback` | grading quality | **12/12** |
 | `mastery` | decay-model correctness | **9/9** |
+| `advocacy` | consent-boundary integrity | **9/9** |
 
 See [`evals/README.md`](evals/README.md) for details; results land in `evals/results/latest.json`.
 
@@ -230,5 +240,5 @@ See [`evals/README.md`](evals/README.md) for details; results land in `evals/res
 | Reliability | Structured output + parse retry; deterministic guardrails with visible `guardrail_notes`; hybrid code/LLM arithmetic |
 | Human-in-the-loop | Stalled learners always escalate to a human coach — enforced in code, not just prompted; infeasible weeks produce a manager-ready negotiation, not silent failure |
 | Genuine user value | Study blocks booked into real calendar gaps; assessment that grades understanding (teach-back); refreshers timed to memory decay |
-| Responsible AI | Synthetic data only, accommodations framed as support (never judgement), the agent advocates for the learner with evidence, AI disclosure |
-| Evidence | 7 gold-set suites, 63 checks, decisions verified 3× per case |
+| Responsible AI | Synthetic data only, accommodations framed as support (never judgement), the learner controls what the manager sees (consent redaction in code), the agent advocates for the learner with evidence, AI disclosure |
+| Evidence | 8 gold-set suites, 72 checks, decisions verified 3× per case |

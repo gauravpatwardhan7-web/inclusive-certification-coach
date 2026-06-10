@@ -27,6 +27,7 @@ from src.agents.study_planner import generate_study_plan
 from src.agents.assessor import generate_assessment, score_assessment
 from src.agents.manager_insights import team_insights, load_team
 from src.agents.calendar_negotiator import negotiate, load_calendar
+from src.agents.advocate import draft_advocacy
 from src.agents.teachback import evaluate_teachback, to_assessment_result
 from src.accessibility import to_spoken
 from src.orchestrator import decide
@@ -78,6 +79,8 @@ ss.setdefault("focus_areas", None)  # set when the orchestrator loops
 ss.setdefault("negotiation", None)  # calendar negotiation result
 ss.setdefault("tb_eval", None)      # teach-back round-1 evaluation
 ss.setdefault("tb_final", None)     # teach-back final evaluation
+ss.setdefault("advocacy", None)     # drafted advocacy note awaiting approval
+ss.setdefault("advocacy_sent", False)
 
 LEARNER_ID = "demo-learner"
 
@@ -410,6 +413,74 @@ with left:
                 read_aloud(ss.spoken_rec, "rec")
 
     st.divider()
+    st.subheader("🤝 Advocacy & privacy — you control the aperture")
+    st.caption("Your accessibility profile is PRIVATE by default — redaction is "
+               "enforced in code before any manager-facing agent runs, so the "
+               "model can't leak what it never saw. When you want something "
+               "from your manager, the Advocate drafts an evidence-based note "
+               "on your behalf. Nothing is sent without your approval.")
+    share_ctx = st.toggle(
+        "Share my accessibility profile with my manager",
+        value=False,
+        help="Off: the note and the manager rollup are framed purely on workload "
+             "and evidence. On: your context is shared briefly, as a support "
+             "need, never as a deficit.",
+    )
+    remedy = st.selectbox(
+        "What do you want to ask for?",
+        ["two recurring 30-minute protected study blocks per week",
+         "two more weeks before the certification target date",
+         "a lighter daily study load while keeping the same goal"],
+    )
+    if st.button("✍️ Draft a note to my manager"):
+        evidence = {}
+        if ss.history:
+            evidence["score_history"] = [h.get("score_pct") for h in ss.history]
+            evidence["latest_score_pct"] = ss.history[-1].get("score_pct")
+            evidence["attempts"] = len(ss.history)
+        if ss.result:
+            evidence["weak_areas"] = ss.result.get("weak_areas", [])
+        if ss.negotiation:
+            evidence["plan_required_minutes"] = \
+                ss.negotiation["stats"]["required_minutes_this_week"]
+            evidence["calendar_available_minutes"] = \
+                ss.negotiation["stats"]["available_minutes_this_week"]
+        if not evidence:
+            evidence["note"] = "no assessment yet; ask is based on workload alone"
+        with st.spinner("Advocate drafting (and leak-checking) your note..."):
+            ss.advocacy = draft_advocacy(evidence, remedy, profile, share_ctx)
+            ss.advocacy_sent = False
+            log("Advocate",
+                f"Drafted a manager note asking for: {remedy}. "
+                f"Accessibility context {'shared with consent' if share_ctx else 'withheld'}; "
+                f"leak check {'flagged and corrected' if ss.advocacy.get('guardrail_notes') else 'clean'}.",
+                decision_detail={
+                    "signals_considered":
+                        [f"shared: {s}" for s in ss.advocacy.get("what_was_shared", [])] +
+                        [f"withheld: {w}" for w in ss.advocacy.get("what_was_withheld", [])],
+                    "guardrail_notes": ss.advocacy.get("guardrail_notes", []),
+                })
+    if ss.advocacy:
+        st.info(ss.advocacy.get("note_to_manager", ""))
+        aud1, aud2 = st.columns(2)
+        with aud1:
+            st.markdown("**This note shares:**")
+            for s in ss.advocacy.get("what_was_shared", []):
+                st.markdown(f"- 📤 {s}")
+        with aud2:
+            st.markdown("**Kept private:**")
+            for w in ss.advocacy.get("what_was_withheld", []):
+                st.markdown(f"- 🔒 {w}")
+        if not ss.advocacy_sent:
+            if st.button("✅ Approve and send"):
+                ss.advocacy_sent = True
+                log("Advocate", "Learner approved the note. Sent to manager "
+                                "(demo: marked as sent, nothing leaves the app).")
+                st.rerun()
+        else:
+            st.success("Approved and sent (demo: nothing actually leaves the app).")
+
+    st.divider()
     st.subheader("🧠 Your memory, tracked honestly")
     st.caption("A skill passed three weeks ago is not a skill known today. Mastery "
                "decays with a half-life that doubles every review (the spacing "
@@ -438,7 +509,9 @@ with left:
 
     st.divider()
     st.subheader("👥 Manager view · team readiness")
-    st.caption("Agent 5 — Manager Insights. Reasons over a synthetic team's progress (TEAM-A).")
+    st.caption("Agent 5 — Manager Insights. Reasons over a synthetic team's progress "
+               "(TEAM-A). Consent is enforced in code: profiles of learners who "
+               "haven't opted in are redacted before the model sees the records.")
     if st.button("Run team readiness rollup"):
         with st.spinner("Manager Insights reasoning over the team..."):
             ss.insights = team_insights(load_team())

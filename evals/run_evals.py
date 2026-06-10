@@ -43,7 +43,38 @@ def _load(name: str) -> dict:
 # --------------------------------------------------------------------------- #
 # Suite 1: orchestrator decisions
 # --------------------------------------------------------------------------- #
-def run_decisions() -> dict:
+def _run_decision_case(decide, c: dict) -> tuple[bool, list, dict]:
+    """One execution of one gold case. Returns (ok, checks, detail)."""
+    checks = []
+    try:
+        out = decide(c["assessment_result"], c["history"], c["accessibility_profile"])
+        action = out.get("action")
+        focus = out.get("focus_next", [])
+        exp = c["expect"]
+
+        checks.append(("action", action == exp["action"],
+                       f"expected {exp['action']}, got {action}"))
+        if exp.get("focus_next_empty"):
+            checks.append(("focus_next_empty", len(focus) == 0,
+                           f"expected empty focus_next, got {focus}"))
+        if exp.get("focus_next_nonempty"):
+            checks.append(("focus_next_nonempty", len(focus) > 0,
+                           "expected non-empty focus_next, got []"))
+        ok = all(p for _, p, _ in checks)
+        detail = {"action": action, "reason": out.get("reason", "")}
+    except Exception as e:  # noqa: BLE001 - eval should never crash the suite
+        ok = False
+        checks.append(("ran", False, f"raised {type(e).__name__}: {e}"))
+        detail = {}
+    return ok, checks, detail
+
+
+def run_decisions(repeat: int = 1) -> dict:
+    """
+    Orchestrator decision accuracy. With repeat > 1, every gold case runs
+    repeat times and only passes if ALL runs pass - LLM decisions are
+    stochastic, so the pass RATE is the honest reliability metric.
+    """
     from src.orchestrator import decide
 
     gold = _load("orchestrator_decisions.json")
@@ -51,38 +82,27 @@ def run_decisions() -> dict:
     passed = 0
 
     for c in gold["cases"]:
-        checks = []
-        try:
-            out = decide(c["assessment_result"], c["history"], c["accessibility_profile"])
-            action = out.get("action")
-            focus = out.get("focus_next", [])
-            exp = c["expect"]
+        runs_ok = 0
+        checks, detail = [], {}
+        for _ in range(repeat):
+            ok, checks, detail = _run_decision_case(decide, c)
+            runs_ok += ok
+        case_pass = runs_ok == repeat
 
-            checks.append(("action", action == exp["action"],
-                           f"expected {exp['action']}, got {action}"))
-            if exp.get("focus_next_empty"):
-                checks.append(("focus_next_empty", len(focus) == 0,
-                               f"expected empty focus_next, got {focus}"))
-            if exp.get("focus_next_nonempty"):
-                checks.append(("focus_next_nonempty", len(focus) > 0,
-                               "expected non-empty focus_next, got []"))
-            ok = all(p for _, p, _ in checks)
-            detail = {"action": action, "reason": out.get("reason", "")}
-        except Exception as e:  # noqa: BLE001 - eval should never crash the suite
-            ok = False
-            checks.append(("ran", False, f"raised {type(e).__name__}: {e}"))
-            detail = {}
-
-        passed += ok
-        cases.append({
-            "id": c["id"], "pass": ok,
+        passed += case_pass
+        entry = {
+            "id": c["id"], "pass": case_pass,
             "checks": [{"name": n, "pass": p, "note": note} for n, p, note in checks],
             "got": detail,
-        })
+        }
+        if repeat > 1:
+            entry["pass_rate"] = f"{runs_ok}/{repeat}"
+        cases.append(entry)
 
     return {
         "suite": "decisions",
         "metric": "decision_accuracy",
+        "repeat": repeat,
         "passed": passed, "total": len(gold["cases"]),
         "score_pct": round(100 * passed / len(gold["cases"])),
         "cases": cases,
@@ -173,6 +193,20 @@ def run_groundedness() -> dict:
                        f"{len(q_bad_skill)} questions with ungrounded skill areas"))
     except Exception as e:  # noqa: BLE001
         checks.append(("assessor_ran", False, f"raised {type(e).__name__}: {e}"))
+
+    # --- Negative test: a certification absent from the KB must be REFUSED,
+    # not hallucinated. This is the strongest groundedness check there is.
+    try:
+        ghost = curate("DP-900", "Data Analyst")
+        ghost_mods = ghost.get("modules", [])
+        checks.append(("curator_refuses_unknown_cert", not ghost_mods,
+                       f"expected empty modules for a cert not in the KB, "
+                       f"got {len(ghost_mods)} modules"))
+        checks.append(("curator_explains_refusal",
+                       bool(str(ghost.get("note", "")).strip()),
+                       "expected a non-empty 'note' explaining the refusal"))
+    except Exception as e:  # noqa: BLE001
+        checks.append(("negative_case_ran", False, f"raised {type(e).__name__}: {e}"))
 
     passed = sum(1 for _, p, _ in checks if p)
     return {
@@ -287,6 +321,10 @@ SUITES = {
 def main() -> int:
     ap = argparse.ArgumentParser(description="Run evals for the Inclusive Certification Coach.")
     ap.add_argument("--suite", choices=list(SUITES), help="run a single suite (default: all)")
+    ap.add_argument("--repeat", type=int, default=1, metavar="N",
+                    help="decisions suite: run each gold case N times; a case "
+                         "passes only if ALL runs pass (reliability under "
+                         "LLM nondeterminism)")
     args = ap.parse_args()
 
     to_run = [args.suite] if args.suite else list(SUITES)
@@ -295,14 +333,15 @@ def main() -> int:
     for name in to_run:
         print(f"\n=== suite: {name} ===")
         t0 = time.time()
-        r = SUITES[name]()
+        r = SUITES[name](repeat=args.repeat) if name == "decisions" else SUITES[name]()
         r["duration_s"] = round(time.time() - t0, 1)
         results.append(r)
 
         for c in r["cases"]:
             label = c.get("id") or c.get("name")
             mark = "PASS" if c["pass"] else "FAIL"
-            print(f"  [{mark}] {label}")
+            rate = f"  ({c['pass_rate']} runs)" if c.get("pass_rate") else ""
+            print(f"  [{mark}] {label}{rate}")
             if not c["pass"]:
                 subs = c.get("checks", [c])
                 for s in subs:

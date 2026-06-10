@@ -11,8 +11,8 @@ base's "Recommended study pattern" section via Foundry IQ retrieval.
 """
 
 import json
-from src.foundry_client import chat
-from src.retrieval import retrieve_as_context
+from src.foundry_client import chat_json
+from src.retrieval import retrieve_with_context
 
 SYSTEM_PROMPT = """You are the Study Plan Generator in an accessibility-first \
 enterprise certification system.
@@ -28,6 +28,8 @@ Hard rules:
   difficulty, break study into the shorter blocks the KB recommends and keep
   daily load light; if low-vision/screen-reader, note text-only/plain-language
   delivery. If profile is "none", use standard pacing.
+- If the path is a REMEDIATION path (a note will say so), keep the schedule
+  short and the daily load lighter - the learner is revisiting weak areas.
 - Carry each skill's "source_id" through to its scheduled sessions.
 
 Output ONLY valid JSON:
@@ -52,28 +54,37 @@ Output ONLY valid JSON:
 No preamble. JSON only."""
 
 
-def _parse(raw: str) -> dict:
-    cleaned = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-    return json.loads(cleaned)
-
-
-def generate_study_plan(learning_path: dict, accessibility_profile: str = "none") -> dict:
+def generate_study_plan(learning_path: dict, accessibility_profile: str = "none",
+                        remediation: bool = False) -> dict:
     """Turn a grounded learning path into an accommodation-aware schedule."""
     # Ground the pacing rules (session length, breaks, checkpoints) in the KB.
-    pacing = retrieve_as_context(
+    pacing, chunks = retrieve_with_context(
         "recommended study pattern session length breaks weekly checkpoints "
         "readiness target accessibility shorter blocks focus"
     )
+    # Don't leak trace metadata into the prompt.
+    path_for_prompt = {k: v for k, v in learning_path.items() if not k.startswith("_")}
+    remediation_note = (
+        "NOTE: this is a REMEDIATION path - the learner failed these areas and "
+        "is revisiting them. Keep it short and supportive.\n\n" if remediation else ""
+    )
     user_msg = (
         f"KNOWLEDGE BASE (pacing guidance):\n{pacing}\n\n"
-        f"LEARNING PATH:\n{json.dumps(learning_path, indent=2)}\n\n"
+        f"{remediation_note}"
+        f"LEARNING PATH:\n{json.dumps(path_for_prompt, indent=2)}\n\n"
         f"ACCESSIBILITY PROFILE: {accessibility_profile}\n\n"
         f"Produce the accommodation-aware study schedule JSON now."
     )
-    return _parse(chat([
+    plan = chat_json([
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": user_msg},
-    ]))
+    ])
+    plan["_retrieval"] = [
+        {"source_id": c["source_id"], "score": c["score"],
+         "snippet": c["text"][:160]}
+        for c in chunks
+    ]
+    return plan
 
 
 if __name__ == "__main__":

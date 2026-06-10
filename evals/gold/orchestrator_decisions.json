@@ -108,6 +108,68 @@
       "history": [{"attempt": 1, "score_pct": 75}],
       "accessibility_profile": "none",
       "expect": {"action": "advance"}
+    },
+    {
+      "id": "D7-declining-but-still-ready",
+      "rationale": "Adversarial: scores decline slightly across attempts but every score is above the threshold and the latest is ready -> advance. Tests that the agent does not over-penalise a negative trend that never breaches readiness.",
+      "assessment_result": {
+        "total": 3, "correct": 3, "score_pct": 92,
+        "per_skill": [
+          {"skill_area": "Develop Azure compute solutions", "result": "correct"},
+          {"skill_area": "Develop for Azure storage", "result": "correct"},
+          {"skill_area": "Implement Azure security", "result": "correct"}
+        ],
+        "weak_areas": [], "ready": true
+      },
+      "history": [
+        {"attempt": 1, "score_pct": 95},
+        {"attempt": 2, "score_pct": 93},
+        {"attempt": 3, "score_pct": 92}
+      ],
+      "accessibility_profile": "none",
+      "expect": {"action": "advance", "focus_next_empty": true}
+    },
+    {
+      "id": "D8-improving-third-attempt-supportive-loop",
+      "rationale": "Adversarial: 3 attempts normally suggests escalation, but the learner is improving strongly (40 -> 60 -> 72), is close to the threshold, and has a focus disability -> supportive loop, not escalate. Tests that 'repeated attempts' is weighed against the improvement trend, not applied as a blunt rule.",
+      "assessment_result": {
+        "total": 3, "correct": 2, "score_pct": 72,
+        "per_skill": [
+          {"skill_area": "Develop Azure compute solutions", "result": "correct"},
+          {"skill_area": "Develop for Azure storage", "result": "correct"},
+          {"skill_area": "Implement Azure security", "result": "incorrect"}
+        ],
+        "weak_areas": ["Implement Azure security"],
+        "ready": false
+      },
+      "history": [
+        {"attempt": 1, "score_pct": 40},
+        {"attempt": 2, "score_pct": 60},
+        {"attempt": 3, "score_pct": 72}
+      ],
+      "accessibility_profile": "Has ADHD; struggles to focus in long study sessions.",
+      "expect": {"action": "loop", "focus_next_nonempty": true}
+    },
+    {
+      "id": "D9-zero-score-first-attempt-no-escalate",
+      "rationale": "Adversarial: a 0% score looks alarming, but it is the FIRST attempt -> loop back to study, never escalate a learner who has only tried once.",
+      "assessment_result": {
+        "total": 3, "correct": 0, "score_pct": 0,
+        "per_skill": [
+          {"skill_area": "Develop Azure compute solutions", "result": "incorrect"},
+          {"skill_area": "Develop for Azure storage", "result": "incorrect"},
+          {"skill_area": "Implement Azure security", "result": "incorrect"}
+        ],
+        "weak_areas": [
+          "Develop Azure compute solutions",
+          "Develop for Azure storage",
+          "Implement Azure security"
+        ],
+        "ready": false
+      },
+      "history": [{"attempt": 1, "score_pct": 0}],
+      "accessibility_profile": "none",
+      "expect": {"action": "loop", "focus_next_nonempty": true}
     }
   ]
 }

@@ -4,11 +4,14 @@ Agent 2 - Assessment Agent.
 Generates grounded, cited practice questions from the knowledge base, then
 scores a learner's answers and reports readiness + weak skill areas. Every
 question cites the source it was drawn from; nothing is invented.
+
+When the orchestrator decides to LOOP, it is re-invoked with focus_areas so
+the retake targets ONLY the weak skill areas.
 """
 
 import json
-from src.foundry_client import chat
-from src.retrieval import retrieve_as_context
+from src.foundry_client import chat_json
+from src.retrieval import retrieve_with_context
 
 GENERATE_PROMPT = """You are the Assessment Agent in an accessibility-first \
 enterprise certification system.
@@ -17,6 +20,8 @@ Generate practice questions grounded ONLY in the provided knowledge base.
 
 Hard rules:
 - Each question must test a skill area that appears in the knowledge base.
+- If the request lists FOCUS AREAS, every question must test one of those
+  skill areas - this is a remediation retake.
 - Each question must include the correct answer and the "source_id" it came from.
 - Use plain, screen-reader-friendly language. No images, no "see figure".
 - Do not invent facts beyond the knowledge base.
@@ -53,23 +58,36 @@ Output ONLY valid JSON:
 No preamble. JSON only."""
 
 
-def _parse(raw: str) -> dict:
-    cleaned = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-    return json.loads(cleaned)
+def generate_assessment(certification: str, role: str, num_questions: int = 3,
+                        focus_areas: list[str] | None = None) -> dict:
+    """Produce grounded, cited practice questions (optionally focused on weak areas)."""
+    query = f"{certification} {role} skill areas exam topics study hours"
+    if focus_areas:
+        query += " " + " ".join(focus_areas)
+    kb, chunks = retrieve_with_context(query)
 
-
-def generate_assessment(certification: str, role: str, num_questions: int = 3) -> dict:
-    """Produce grounded, cited practice questions."""
-    kb = retrieve_as_context(f"{certification} {role} skill areas exam topics study hours")
+    focus_block = ""
+    if focus_areas:
+        focus_block = (
+            "FOCUS AREAS (remediation retake - test ONLY these):\n- "
+            + "\n- ".join(focus_areas) + "\n\n"
+        )
     user_msg = (
         f"KNOWLEDGE BASE:\n{kb}\n\n"
+        f"{focus_block}"
         f"Generate {num_questions} questions for certification {certification} "
         f"(role: {role}). Cover different skill areas. JSON only."
     )
-    return _parse(chat([
+    assessment = chat_json([
         {"role": "system", "content": GENERATE_PROMPT},
         {"role": "user", "content": user_msg},
-    ]))
+    ])
+    assessment["_retrieval"] = [
+        {"source_id": c["source_id"], "score": c["score"],
+         "snippet": c["text"][:160]}
+        for c in chunks
+    ]
+    return assessment
 
 
 def score_assessment(questions: list[dict], answers: dict) -> dict:
@@ -79,10 +97,10 @@ def score_assessment(questions: list[dict], answers: dict) -> dict:
         f"LEARNER ANSWERS:\n{json.dumps(answers, indent=2)}\n\n"
         f"Score now. JSON only."
     )
-    return _parse(chat([
+    return chat_json([
         {"role": "system", "content": SCORE_PROMPT},
         {"role": "user", "content": user_msg},
-    ]))
+    ])
 
 
 if __name__ == "__main__":

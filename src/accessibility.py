@@ -55,6 +55,8 @@ def _strip_markdown(text: str) -> str:
 def to_spoken(kind: str, payload: dict, profile: str = "none") -> str:
     """Return a screen-reader/voice-friendly spoken script for an agent payload."""
     hint = _KIND_HINT.get(kind, "structured learning data")
+    # Underscore-prefixed keys are trace metadata (e.g. _retrieval) - not for narration.
+    payload = {k: v for k, v in payload.items() if not k.startswith("_")}
     user_msg = (
         f"DATA KIND: {hint}\n"
         f"ACCESSIBILITY PROFILE: {profile}\n\n"

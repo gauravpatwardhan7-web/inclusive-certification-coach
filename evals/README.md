@@ -7,6 +7,7 @@ system stay grounded (no hallucinated facts, every claim cited)**.
 ```bash
 source .venv/bin/activate
 python -m evals.run_evals                  # all suites
+python -m evals.run_evals --repeat 3       # decisions: 3 runs per case, all must pass
 python -m evals.run_evals --suite decisions
 python -m evals.run_evals --suite groundedness
 python -m evals.run_evals --suite manager
@@ -19,7 +20,7 @@ Each run prints a pass/fail scorecard and writes machine-readable results to
 
 ### `decisions` — orchestrator reasoning accuracy
 
-Gold set: [`gold/orchestrator_decisions.json`](gold/orchestrator_decisions.json) (6 cases).
+Gold set: [`gold/orchestrator_decisions.json`](gold/orchestrator_decisions.json) (9 cases).
 
 For each case we fix the assessment result, the attempt history, and the
 accessibility profile, then assert the orchestrator's decision
@@ -29,8 +30,19 @@ accessibility profile, then assert the orchestrator's decision
 |---|---|
 | D1, D5, D6 | Ready learners advance; `focus_next` is empty when advancing |
 | D2 | A failing first attempt loops back to weak areas (not escalate) |
-| D3 | Three failed attempts escalate to a human coach |
+| D3 | Three stalled attempts escalate to a human coach |
 | D4 | **Accommodation-aware branch**: a learner who is close, on attempt 2, with a focus disability gets a supportive `loop`, not an `escalate` |
+| D7 | **Adversarial**: scores decline across attempts but stay above threshold → still `advance` (no over-penalising a harmless trend) |
+| D8 | **Adversarial**: third attempt, but improving strongly (40→60→72) with a focus disability → supportive `loop`, not a blunt 3-attempts-means-escalate |
+| D9 | **Adversarial**: a 0% score on the FIRST attempt → `loop`, never escalate someone who has tried once |
+
+With `--repeat N`, every case runs N times and passes only if **all** runs
+pass — the honest reliability metric for a stochastic decision-maker.
+
+Note that the decision passes through deterministic guardrails
+(`src/orchestrator.py:_apply_guardrails`) before being asserted: the eval
+therefore validates the system's behaviour (LLM + rails), which is what a
+learner actually experiences.
 
 This suite calls only the reasoning model, so it runs even after the Azure AI
 Search resource is torn down. Metric: **decision accuracy** (cases passed / total).
@@ -45,7 +57,8 @@ Runs the Curator, Study Plan Generator, and Assessment agents end-to-end and che
 - every Curator module's `recommended_hours` is a value that actually appears in the KB (no invented hours);
 - every Curator module, Study Plan session, and Assessment question names a skill area that exists in the KB (no invented skills);
 - every Study Plan day stays within the schedule's own stated daily-minutes cap (accommodation honoured, not just claimed);
-- every grounded item carries a non-empty `source_id` (nothing uncited).
+- every grounded item carries a non-empty `source_id` (nothing uncited);
+- **negative case**: asking for a certification that is NOT in the knowledge base (`DP-900`) must return an empty module list with an explanatory note — the agent refuses to hallucinate a path.
 
 This suite needs the full pipeline including **Foundry IQ retrieval (Azure AI
 Search)**. If that resource has been torn down post-submission, run
@@ -75,7 +88,8 @@ Reasoning model only — no Search resource needed. Metric: **spoken output qual
 
 ## Latest results
 
-All suites pass: `decisions` 6/6, `groundedness` 11/11, `manager` 5/5,
+All suites pass: `decisions` 9/9 with `--repeat 3` (27/27 individual runs),
+`groundedness` 13/13 (incl. the unknown-cert refusal), `manager` 5/5,
 `accessibility` 5/5. See
 `results/latest.json` for the most recent run (per-suite pass/fail + aggregate
 metrics, written on every invocation).

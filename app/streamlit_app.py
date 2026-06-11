@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import json as _json
+import re as _re
 from datetime import date
 
 import streamlit as st
@@ -41,7 +42,14 @@ st.markdown(theme.CSS, unsafe_allow_html=True)
 
 
 def H(html_str: str):
-    st.markdown(html_str, unsafe_allow_html=True)
+    # Streamlit still runs a Markdown pass under unsafe_allow_html, so any
+    # line that STARTS with 4+ spaces, '#', or '>' (e.g. an indented tag, or a
+    # retrieved KB snippet beginning with '# Heading' / '> quote') gets parsed
+    # as a code block / heading / blockquote and corrupts the HTML. Collapsing
+    # every newline+whitespace run to a single space removes all line-starts,
+    # so the whole component is treated as one HTML block. <br> tags (not '\n')
+    # are preserved for intentional line breaks.
+    st.markdown(_re.sub(r"\s*\n\s*", " ", html_str), unsafe_allow_html=True)
 
 
 def read_aloud(text: str, key: str):
@@ -308,7 +316,11 @@ with left:
             log("Accessibility Narrator",
                 "Rendered the recommendation as a spoken script.")
 
-    if ss.path and ss.path.get("modules"):
+    # The readiness check shows only while there's no standing decision. Once
+    # the orchestrator has decided, the way forward IS the recommendation
+    # (advance = done, loop = remediation button, escalate = human) - showing a
+    # fresh "attempt N" check here too would be a confusing second path.
+    if ss.path and ss.path.get("modules") and not ss.decision:
         attempt_no = len(ss.history) + 1
         H(theme.section("Step 4", f"Readiness check — attempt {attempt_no}",
                         "Show what you know, the way that suits you."))
@@ -366,11 +378,8 @@ with left:
             if ss.tb_eval and not ss.tb_final:
                 ev = ss.tb_eval
                 st.write(ev.get("feedback", ""))
-                H(theme.ledger(
-                    [f"✓ {c}" for c in ev.get("concepts_covered", [])],
-                    [f"… {c}" for c in ev.get("concepts_missing", [])],
-                ).replace("This note shares", "You covered")
-                 .replace("Kept private", "Still missing"))
+                H(theme.concept_ledger(ev.get("concepts_covered", []),
+                                       ev.get("concepts_missing", [])))
                 if ev.get("misconception"):
                     H(theme.banner("warn", "alert", "One thing to un-learn",
                                    theme.esc(ev["misconception"])))

@@ -406,6 +406,18 @@ def ledger(shared: list[str], withheld: list[str]) -> str:
     </div>"""
 
 
+def concept_ledger(covered: list[str], missing: list[str]) -> str:
+    c = "".join(f"<li>{esc(x)}</li>" for x in covered) or "<li>—</li>"
+    m = "".join(f"<li>{esc(x)}</li>" for x in missing) or "<li>—</li>"
+    return f"""
+    <div class="icc-ledger">
+      <div class="icc-card icc-soft"><span class="h" style="color:var(--success)">
+        {icon('check', 13)} You explained</span><ul>{c}</ul></div>
+      <div class="icc-card icc-soft"><span class="h" style="color:var(--warn)">
+        {icon('target', 13)} Still to cover</span><ul>{m}</ul></div>
+    </div>"""
+
+
 def learner_card(lid: str, status: str, rationale: str, action: str) -> str:
     kind = {"ready": "ok", "on_track": "info",
             "at_risk": "warn", "needs_support": "bad"}.get(status, "")

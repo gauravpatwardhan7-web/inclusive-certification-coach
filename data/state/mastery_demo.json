@@ -2,19 +2,19 @@
   "_note": "SYNTHETIC demo memory state for learner 'demo-learner'. Past-dated reviews so the decay model has something visible to show. Updated automatically as assessments are scored.",
   "demo-learner": {
     "Develop Azure compute solutions (Functions, App Service)": {
-      "mastery": 76,
-      "last_reviewed": "2026-06-11",
-      "reviews": 3
+      "mastery": 88,
+      "last_reviewed": "2026-05-13",
+      "reviews": 2
     },
     "Develop for Azure storage (Blob, Cosmos DB)": {
-      "mastery": 73,
-      "last_reviewed": "2026-06-11",
-      "reviews": 2
+      "mastery": 80,
+      "last_reviewed": "2026-05-20",
+      "reviews": 1
     },
     "Implement Azure security (auth, Key Vault)": {
-      "mastery": 20,
-      "last_reviewed": "2026-06-11",
-      "reviews": 2
+      "mastery": 45,
+      "last_reviewed": "2026-06-03",
+      "reviews": 1
     },
     "Monitor, troubleshoot, optimize": {
       "mastery": 90,

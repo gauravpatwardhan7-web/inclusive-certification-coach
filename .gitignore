@@ -15,3 +15,6 @@ __pycache__/
 
 # Streamlit local cache
 .streamlit/secrets.toml
+
+# Playwright MCP run artifacts
+.playwright-mcp/

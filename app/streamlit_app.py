@@ -1,14 +1,14 @@
 """
 Inclusive Certification Coach - demo UI.
 
-The core idea of this UI: make the AGENT REASONING VISIBLE. As the learner moves
-through the flow, the right-hand panel shows each agent's step, what it
-retrieved (chunks + relevance scores), what it cited, and the orchestrator's
-advance/loop/escalate decision with the signals it weighed.
+The core idea of this UI: make the AGENT REASONING VISIBLE. The right-hand
+panel is a live timeline of each agent's step - what it retrieved (chunks +
+relevance scores), what it cited, and how the orchestrator weighed the
+evidence - across every loop iteration.
 
-The loop is REAL here: attempt history persists across retakes, a "loop"
-decision triggers focused remediation (weak areas only), and three stalled
-attempts escalate to a human coach.
+Presentation is delegated to app/theme.py (Swiss/minimal design system,
+Lexend + Source Sans 3, semantic tokens, visible focus, reduced-motion
+support). All agent logic is unchanged.
 """
 
 import sys
@@ -27,11 +27,21 @@ from src.agents.study_planner import generate_study_plan
 from src.agents.assessor import generate_assessment, score_assessment
 from src.agents.manager_insights import team_insights, load_team
 from src.agents.calendar_negotiator import negotiate, load_calendar
-from src.agents.advocate import draft_advocacy
 from src.agents.teachback import evaluate_teachback, to_assessment_result
+from src.agents.advocate import draft_advocacy
 from src.accessibility import to_spoken
 from src.orchestrator import decide
 from src import mastery
+from app import theme
+
+st.set_page_config(page_title="Inclusive Certification Coach",
+                   page_icon="🎓", layout="wide")
+
+st.markdown(theme.CSS, unsafe_allow_html=True)
+
+
+def H(html_str: str):
+    st.markdown(html_str, unsafe_allow_html=True)
 
 
 def read_aloud(text: str, key: str):
@@ -41,13 +51,14 @@ def read_aloud(text: str, key: str):
     safe = _json.dumps(text)
     components.html(
         f"""
-        <div style="font-family: sans-serif;">
-          <button onclick="speak_{key}()"
-            style="padding:6px 12px;margin-right:6px;border:1px solid #ccc;
-                   border-radius:6px;cursor:pointer;">🔊 Read aloud</button>
-          <button onclick="window.speechSynthesis.cancel()"
-            style="padding:6px 12px;border:1px solid #ccc;border-radius:6px;
-                   cursor:pointer;">⏹ Stop</button>
+        <div style="font-family: 'Source Sans 3', sans-serif;">
+          <button onclick="speak_{key}()" aria-label="Read this aloud"
+            style="min-height:40px;padding:6px 16px;margin-right:6px;border:1px solid #CBD5E1;
+                   border-radius:10px;cursor:pointer;font-weight:600;background:#fff;">
+            ▶ Read aloud</button>
+          <button onclick="window.speechSynthesis.cancel()" aria-label="Stop reading"
+            style="min-height:40px;padding:6px 16px;border:1px solid #CBD5E1;border-radius:10px;
+                   cursor:pointer;font-weight:600;background:#fff;">■ Stop</button>
         </div>
         <script>
           function speak_{key}() {{
@@ -58,10 +69,9 @@ def read_aloud(text: str, key: str):
           }}
         </script>
         """,
-        height=48,
+        height=54,
     )
 
-st.set_page_config(page_title="Inclusive Certification Coach", page_icon="🎓", layout="wide")
 
 # ---- session state ----
 ss = st.session_state
@@ -122,8 +132,9 @@ def build_round(cert: str, role: str, profile: str, voice_mode: bool,
             f"{ss.path.get('total_hours', 0)}h path ({len(mods)} modules), each cited{tag}.",
             retrieved=ss.path.get("_retrieval"))
     if not mods:
-        st.warning("The knowledge base has no content for this certification: "
-                   + (ss.path.get("note") or "no further detail given."))
+        H(theme.banner("warn", "alert", "Nothing to build from",
+                       "The knowledge base has no content for this certification: "
+                       + theme.esc(ss.path.get("note") or "no further detail given.")))
         ss.study_plan = None
         ss.assessment = None
         return
@@ -155,18 +166,20 @@ def build_round(cert: str, role: str, profile: str, voice_mode: bool,
     ss.tb_final = None
 
 
-# ---- header ----
-st.title("🎓 Inclusive Certification Coach")
-st.caption(
-    "An accessibility-first, multi-agent certification coach. "
-    "Grounded in Microsoft Foundry IQ. All data synthetic."
-)
+# ---- hero ----
+H(theme.hero([
+    ("brain", "8 reasoning agents"),
+    ("book", "Grounded via Foundry IQ — every claim cited"),
+    ("shield", "Consent enforced in code"),
+    ("check", "72/72 eval checks green"),
+]))
 
-left, right = st.columns([3, 2])
+left, right = st.columns([3, 2], gap="large")
 
 # ================= LEFT: the learner flow =================
 with left:
-    st.subheader("1 · Your goal")
+    H(theme.section("Step 1", "Your goal",
+                    "Tell the coach what you're working toward and how you work best."))
     cert = st.selectbox(
         "Target certification", ["AZ-204", "AZ-900"],
         help="AZ-900 requires data/knowledge_base/az900_fundamentals_guide.md "
@@ -180,64 +193,67 @@ with left:
         help="Used to adapt pacing, formats, and study blocks.",
     )
     voice_mode = st.toggle(
-        "🔊 Voice / screen-reader mode",
+        "Voice / screen-reader mode",
         value=False,
         help="Generates a screen-reader-first spoken script for each result and "
              "lets you play it aloud (browser text-to-speech, no audio model).",
     )
 
-    if st.button("Build my learning path", type="primary"):
+    if st.button("Build my learning path", type="primary", use_container_width=True):
         ss.trace = []
         ss.history = []          # a fresh goal starts a fresh attempt history
         ss.focus_areas = None
         build_round(cert, role, profile, voice_mode, focus_areas=None)
 
     if ss.path and ss.path.get("modules"):
-        focus_note = (f" · focused on: {', '.join(ss.focus_areas)}"
-                      if ss.focus_areas else "")
-        st.subheader("2 · Your accessibility-aware learning path")
-        if focus_note:
-            st.caption(f"Remediation path{focus_note}")
+        H(theme.section("Step 2", "Your accessibility-aware learning path",
+                        ("Remediation path — focused on: " + ", ".join(ss.focus_areas))
+                        if ss.focus_areas else
+                        "Every module is grounded in the knowledge base and cites its source."))
         for m in ss.path["modules"]:
-            with st.expander(f"{m.get('skill_area', '?')} · {m.get('recommended_hours', '?')}h"):
-                st.write(f"**Accommodation:** {m.get('accommodation_note', '—')}")
-                st.caption(f"Source: {m.get('source_id', '—')}")
+            H(theme.module_card(m.get("skill_area", "?"),
+                                m.get("recommended_hours", "?"),
+                                m.get("accommodation_note", "—"),
+                                m.get("source_id", "—")))
         if ss.spoken_path:
-            with st.expander("🔊 Spoken version (screen-reader friendly)"):
+            with st.expander("Spoken version (screen-reader friendly)"):
                 st.write(ss.spoken_path)
                 read_aloud(ss.spoken_path, "path")
 
     if ss.study_plan:
         sp = ss.study_plan
-        st.subheader("3 · Your accommodation-aware study schedule")
-        st.caption(
-            f"{sp.get('total_days', '?')} days · up to {sp.get('daily_max_minutes', '?')} min/day · "
-            f"{sp.get('block_minutes', '?')}-min blocks"
-        )
+        H(theme.section("Step 3", "Your accommodation-aware study schedule"))
+        H(theme.tiles([
+            (str(sp.get("total_days", "?")), "days"),
+            (f"≤ {sp.get('daily_max_minutes', '?')}", "min / day"),
+            (str(sp.get("block_minutes", "?")), "min blocks"),
+            (str(len(sp.get("sessions", []))), "sessions"),
+        ]))
         for s in sp.get("sessions", [])[:8]:
-            st.markdown(
-                f"**Day {s.get('day', '?')} · {s.get('skill_area', '?')}** — "
-                f"{s.get('minutes', '?')} min ({s.get('blocks', '?')})  \n"
-                f"_{s.get('accommodation_note', '')}_"
-            )
+            H(theme.session_row(s.get("day", "?"), s.get("skill_area", "?"),
+                                s.get("minutes", "?"), s.get("blocks", ""),
+                                s.get("accommodation_note", "")))
         if len(sp.get("sessions", [])) > 8:
-            st.caption(f"... and {len(sp['sessions']) - 8} more sessions.")
+            st.caption(f"… and {len(sp['sessions']) - 8} more sessions.")
         if sp.get("checkpoints"):
-            st.write("**Checkpoints:** " + " · ".join(sp["checkpoints"]))
+            H(theme.banner("info", "target", "Checkpoints",
+                           " · ".join(theme.esc(c) for c in sp["checkpoints"])))
 
-        st.subheader("3b · Make it real: negotiate with your calendar")
-        st.caption("A plan that ignores your meetings is a plan you won't follow. "
-                   "The Calendar Negotiator books study blocks into actual gaps — "
-                   "or pushes back with evidence when the week doesn't have the time.")
-        week_choice = st.selectbox(
+        H(theme.section("Step 3b", "Make it real: negotiate with your calendar",
+                        "A plan that ignores your meetings is a plan you won't follow. "
+                        "The negotiator books blocks into actual gaps — or pushes back "
+                        "with evidence when the week doesn't have the time."))
+        week_choice = st.radio(
             "Your work calendar this week (synthetic)",
-            ["Light week (a few meetings)", "Packed week (back-to-back)"],
+            ["Light week — a few meetings", "Packed week — back-to-back"],
+            horizontal=True,
         )
-        if st.button("📅 Negotiate study time with my calendar"):
+        if st.button("Negotiate study time with my calendar", use_container_width=True):
             cal_file = ("calendar_light_week.json" if week_choice.startswith("Light")
                         else "calendar_packed_week.json")
             with st.spinner("Calendar Negotiator finding real gaps and booking blocks..."):
                 ss.negotiation = negotiate(sp, load_calendar(cal_file), profile)
+                ss.negotiation["_calendar_file"] = cal_file
                 neg = ss.negotiation
                 stats = neg["stats"]
                 log("Calendar Negotiator",
@@ -252,29 +268,27 @@ with left:
         if ss.negotiation:
             neg = ss.negotiation
             stats = neg["stats"]
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Plan needs (this week)", f"{stats['required_minutes_this_week']} min")
-            c2.metric("Calendar has", f"{stats['available_minutes_this_week']} min")
-            c3.metric("Booked", f"{stats['scheduled_minutes']} min")
+            H(theme.tiles([
+                (f"{stats['required_minutes_this_week']}", "min the plan needs"),
+                (f"{stats['available_minutes_this_week']}", "min calendar has"),
+                (f"{stats['scheduled_minutes']}", "min booked"),
+                (f"~{stats['est_weeks_to_complete_plan']} wk", "projected to finish"),
+            ]))
             st.write(neg["negotiation"].get("summary", ""))
             if neg["scheduled_blocks"]:
-                with st.expander(f"📅 {len(neg['scheduled_blocks'])} booked study blocks"):
-                    last_day = None
-                    for b in neg["scheduled_blocks"]:
-                        if b["date"] != last_day:
-                            st.markdown(f"**{b['weekday']} {b['date']}**")
-                            last_day = b["date"]
-                        st.markdown(f"- {b['start']}–{b['end']} · {b['skill_area']} "
-                                    f"({b['minutes']} min) — `{b['source_id']}`")
+                H(theme.week_grid(load_calendar(neg.get("_calendar_file",
+                                                        "calendar_light_week.json")),
+                                  neg["scheduled_blocks"]))
             if not neg["feasible"]:
-                st.error(f"⚖️ This week can't hold the plan — projected "
-                         f"{stats['est_weeks_to_complete_plan']} weeks at your calendar's pace.")
-                st.markdown("**Draft message to your manager (evidence, not excuses):**")
-                st.info(neg["negotiation"].get("message_to_manager", ""))
+                H(theme.banner("bad", "alert", "This week can't hold the plan",
+                               f"Projected ~{stats['est_weeks_to_complete_plan']} weeks at "
+                               f"your calendar's pace. Evidence, not excuses — here's a "
+                               f"draft for your manager:"))
+                H(f'<div class="icc-card">{theme.esc(neg["negotiation"].get("message_to_manager", ""))}</div>')
                 if neg["negotiation"].get("options"):
-                    st.markdown("**Your options:**")
-                    for o in neg["negotiation"]["options"]:
-                        st.markdown(f"- {o}")
+                    H(theme.banner("info", "repeat", "Your options",
+                                   "<br>".join("• " + theme.esc(o)
+                                               for o in neg["negotiation"]["options"])))
 
     def finish_attempt(result: dict, attempt_no: int):
         """Shared tail of both assessment modes: history -> decide -> narrate."""
@@ -296,7 +310,8 @@ with left:
 
     if ss.path and ss.path.get("modules"):
         attempt_no = len(ss.history) + 1
-        st.subheader(f"4 · Readiness check — attempt {attempt_no}")
+        H(theme.section("Step 4", f"Readiness check — attempt {attempt_no}",
+                        "Show what you know, the way that suits you."))
         mode = st.radio(
             "How do you want to show what you know?",
             ["Quick check (multiple choice)",
@@ -313,7 +328,7 @@ with left:
                     q.get("question", q["id"]), q.get("options", []),
                     key=f"{q['id']}-a{attempt_no}", index=None,
                 )
-            if st.button("Submit answers"):
+            if st.button("Submit answers", type="primary"):
                 # Map selected option text back to its letter (A/B/C/D).
                 picked = {}
                 for q in ss.assessment["questions"]:
@@ -337,7 +352,7 @@ with left:
                 placeholder="In your own words: what is it, why does it matter, "
                             "how would you actually use it?",
             )
-            if st.button("Evaluate my explanation") and tb_text.strip():
+            if st.button("Evaluate my explanation", type="primary") and tb_text.strip():
                 with st.spinner("Teach-back Assessor grading against the knowledge base..."):
                     ss.tb_eval = evaluate_teachback(cert, tb_skill, tb_text, profile)
                     ss.tb_final = None
@@ -351,20 +366,18 @@ with left:
             if ss.tb_eval and not ss.tb_final:
                 ev = ss.tb_eval
                 st.write(ev.get("feedback", ""))
-                cov, mis = st.columns(2)
-                with cov:
-                    st.markdown("**You covered:**")
-                    for c in ev.get("concepts_covered", []) or ["—"]:
-                        st.markdown(f"- ✅ {c}")
-                with mis:
-                    st.markdown("**Still missing:**")
-                    for c in ev.get("concepts_missing", []) or ["—"]:
-                        st.markdown(f"- ⬜ {c}")
+                H(theme.ledger(
+                    [f"✓ {c}" for c in ev.get("concepts_covered", [])],
+                    [f"… {c}" for c in ev.get("concepts_missing", [])],
+                ).replace("This note shares", "You covered")
+                 .replace("Kept private", "Still missing"))
                 if ev.get("misconception"):
-                    st.warning(f"⚠️ One thing to un-learn: {ev['misconception']}")
-                st.markdown(f"**Follow-up question:** {ev.get('follow_up_question', '')}")
+                    H(theme.banner("warn", "alert", "One thing to un-learn",
+                                   theme.esc(ev["misconception"])))
+                H(theme.banner("info", "brain", "Follow-up question",
+                               theme.esc(ev.get("follow_up_question", ""))))
                 tb_answer = st.text_area("Your answer", key=f"tbf-{attempt_no}", height=90)
-                if st.button("Submit follow-up answer") and tb_answer.strip():
+                if st.button("Submit follow-up answer", type="primary") and tb_answer.strip():
                     with st.spinner("Folding your answer into the final grade..."):
                         ss.tb_final = evaluate_teachback(
                             cert, tb_skill, tb_text, profile,
@@ -382,43 +395,52 @@ with left:
 
             if ss.tb_final:
                 st.write(ss.tb_final.get("feedback", ""))
-                st.metric("Understanding", f"{ss.tb_final.get('understanding_pct', 0)}%")
+                H(theme.tiles([(f"{ss.tb_final.get('understanding_pct', 0)}%",
+                                "understanding")]))
 
     if ss.decision:
-        st.subheader("5 · Recommendation")
+        H(theme.section("Step 5", "Recommendation"))
+        if ss.history:
+            H(theme.attempts_chips(ss.history))
         action = ss.decision.get("action")
         if action == "advance":
-            st.success(f"✅ Advance. {ss.decision.get('message_to_learner', '')}")
+            H(theme.banner("ok", "check", "Advance — you're ready",
+                           theme.esc(ss.decision.get("message_to_learner", ""))))
         elif action == "loop":
-            st.warning(f"🔁 Keep going. {ss.decision.get('message_to_learner', '')}")
-            if ss.decision.get("focus_next"):
-                st.write("**Focus next on:** " + ", ".join(ss.decision["focus_next"]))
+            focus = ss.decision.get("focus_next", [])
+            body = theme.esc(ss.decision.get("message_to_learner", ""))
+            if focus:
+                body += ("<br><strong>Focus next on:</strong> "
+                         + theme.esc(", ".join(focus)))
+            H(theme.banner("warn", "repeat", "Keep going — loop back to weak areas", body))
             # THE LOOP, MADE REAL: one click re-curates only the weak areas,
             # re-plans lighter, and generates a focused retake.
             if st.button(
-                f"🔁 Start focused remediation (attempt {len(ss.history) + 1})",
-                type="primary",
+                f"Start focused remediation (attempt {len(ss.history) + 1})",
+                type="primary", use_container_width=True,
             ):
                 ss.focus_areas = ss.decision.get("focus_next") or None
                 build_round(cert, role, profile, voice_mode,
                             focus_areas=ss.focus_areas)
                 st.rerun()
         else:
-            st.info(f"🧑‍🏫 Escalating to a human coach. {ss.decision.get('message_to_learner', '')}")
-            scores = " → ".join(str(h.get("score_pct")) for h in ss.history)
-            st.caption(f"Attempt history that triggered the handoff: {scores}")
+            scores = " → ".join(f"{h.get('score_pct')}%" for h in ss.history)
+            H(theme.banner("bad", "user", "Escalating to a human coach",
+                           theme.esc(ss.decision.get("message_to_learner", ""))
+                           + f"<br><span class='icc-sub'>Attempt history that triggered "
+                             f"the handoff: {scores}</span>"))
         if ss.spoken_rec:
-            with st.expander("🔊 Spoken version (screen-reader friendly)"):
+            with st.expander("Spoken version (screen-reader friendly)"):
                 st.write(ss.spoken_rec)
                 read_aloud(ss.spoken_rec, "rec")
 
     st.divider()
-    st.subheader("🤝 Advocacy & privacy — you control the aperture")
-    st.caption("Your accessibility profile is PRIVATE by default — redaction is "
-               "enforced in code before any manager-facing agent runs, so the "
-               "model can't leak what it never saw. When you want something "
-               "from your manager, the Advocate drafts an evidence-based note "
-               "on your behalf. Nothing is sent without your approval.")
+    H(theme.section("Privacy", "Advocacy — you control the aperture",
+                    "Your accessibility profile is private by default; redaction is "
+                    "enforced in code before any manager-facing agent runs. When you "
+                    "want something from your manager, the Advocate drafts an "
+                    "evidence-based note on your behalf. Nothing is sent without "
+                    "your approval."))
     share_ctx = st.toggle(
         "Share my accessibility profile with my manager",
         value=False,
@@ -432,7 +454,7 @@ with left:
          "two more weeks before the certification target date",
          "a lighter daily study load while keeping the same goal"],
     )
-    if st.button("✍️ Draft a note to my manager"):
+    if st.button("Draft a note to my manager", use_container_width=True):
         evidence = {}
         if ss.history:
             evidence["score_history"] = [h.get("score_pct") for h in ss.history]
@@ -461,45 +483,39 @@ with left:
                     "guardrail_notes": ss.advocacy.get("guardrail_notes", []),
                 })
     if ss.advocacy:
-        st.info(ss.advocacy.get("note_to_manager", ""))
-        aud1, aud2 = st.columns(2)
-        with aud1:
-            st.markdown("**This note shares:**")
-            for s in ss.advocacy.get("what_was_shared", []):
-                st.markdown(f"- 📤 {s}")
-        with aud2:
-            st.markdown("**Kept private:**")
-            for w in ss.advocacy.get("what_was_withheld", []):
-                st.markdown(f"- 🔒 {w}")
+        H(f'<div class="icc-card">{theme.esc(ss.advocacy.get("note_to_manager", ""))}</div>')
+        H(theme.ledger(ss.advocacy.get("what_was_shared", []),
+                       ss.advocacy.get("what_was_withheld", [])))
         if not ss.advocacy_sent:
-            if st.button("✅ Approve and send"):
+            if st.button("Approve and send", type="primary"):
                 ss.advocacy_sent = True
                 log("Advocate", "Learner approved the note. Sent to manager "
                                 "(demo: marked as sent, nothing leaves the app).")
                 st.rerun()
         else:
-            st.success("Approved and sent (demo: nothing actually leaves the app).")
+            H(theme.banner("ok", "send", "Approved and sent",
+                           "Demo: nothing actually leaves the app."))
 
     st.divider()
-    st.subheader("🧠 Your memory, tracked honestly")
-    st.caption("A skill passed three weeks ago is not a skill known today. Mastery "
-               "decays with a half-life that doubles every review (the spacing "
-               "effect) — refreshers land just before you'd forget.")
+    H(theme.section("Memory", "Your memory, tracked honestly",
+                    "A skill passed three weeks ago is not a skill known today. "
+                    "Mastery decays with a half-life that doubles every review (the "
+                    "spacing effect) — refreshers land just before you'd forget. The "
+                    "grey tick marks where you last peaked."))
     mem_rows = mastery.snapshot(mastery.load_store(), LEARNER_ID, date.today())
     if not mem_rows:
-        st.info("Complete an assessment and your per-skill memory will be tracked here.")
+        H(theme.banner("info", "brain", "Nothing tracked yet",
+                       "Complete an assessment and your per-skill memory will appear here."))
     due_now = []
     for r in mem_rows:
-        icon = "🔔" if r["due_refresher"] else "🟢"
         if r["due_refresher"]:
             due_now.append(r["skill_area"])
-        st.progress(min(100, max(0, r["decayed_mastery"])) / 100,
-                    text=f"{icon} {r['skill_area']} — retained {r['decayed_mastery']}% "
-                         f"(was {r['raw_mastery']}%, reviewed {r['days_since_review']}d ago, "
-                         f"half-life {round(r['half_life_days'])}d)")
+        H(theme.memory_bar(r))
     if due_now:
-        st.warning("Due for a refresher: " + " · ".join(due_now))
-        if st.button("🔔 Build a refresher path for the fading skills"):
+        H(theme.banner("warn", "repeat", "Due for a refresher",
+                       theme.esc(" · ".join(due_now))))
+        if st.button("Build a refresher path for the fading skills",
+                     use_container_width=True):
             ss.focus_areas = due_now
             log("Memory Tracker",
                 f"Decayed mastery below retention on {len(due_now)} previously "
@@ -508,60 +524,41 @@ with left:
             st.rerun()
 
     st.divider()
-    st.subheader("👥 Manager view · team readiness")
-    st.caption("Agent 5 — Manager Insights. Reasons over a synthetic team's progress "
-               "(TEAM-A). Consent is enforced in code: profiles of learners who "
-               "haven't opted in are redacted before the model sees the records.")
-    if st.button("Run team readiness rollup"):
+    H(theme.section("Manager", "Team readiness",
+                    "Manager Insights reasons over a synthetic team (TEAM-A). Consent "
+                    "is enforced in code: profiles of learners who haven't opted in "
+                    "are redacted before the model sees the records."))
+    if st.button("Run team readiness rollup", use_container_width=True):
         with st.spinner("Manager Insights reasoning over the team..."):
             ss.insights = team_insights(load_team())
             log("Manager Insights",
                 f"Rolled up TEAM-A: {ss.insights.get('team_readiness_pct')}% ready.")
     if ss.insights:
         ins = ss.insights
-        st.metric("Team readiness", f"{ins.get('team_readiness_pct', '?')}%")
+        ready_n = sum(1 for l in ins.get("learners", []) if l.get("status") == "ready")
+        H(theme.tiles([
+            (f"{ins.get('team_readiness_pct', '?')}%", "team readiness"),
+            (f"{ready_n}/{len(ins.get('learners', []))}", "learners ready"),
+        ]))
         st.write(ins.get("summary", ""))
-        status_icon = {"ready": "✅", "on_track": "📈", "at_risk": "⚠️", "needs_support": "🧑‍🏫"}
         for lr in ins.get("learners", []):
-            st.markdown(
-                f"{status_icon.get(lr.get('status'), '•')} **{lr.get('learner_id', '?')}** "
-                f"({lr.get('status', '?')}) — {lr.get('rationale', '')}  \n"
-                f"_Action: {lr.get('recommended_action', '')}_"
-            )
+            H(theme.learner_card(lr.get("learner_id", "?"), lr.get("status", "?"),
+                                 lr.get("rationale", ""),
+                                 lr.get("recommended_action", "")))
         if ins.get("team_actions"):
-            st.write("**Team actions:** " + " · ".join(ins["team_actions"]))
+            H(theme.banner("info", "trend", "Team actions",
+                           "<br>".join("• " + theme.esc(a)
+                                       for a in ins["team_actions"])))
 
 # ================= RIGHT: the reasoning trace =================
 with right:
-    st.subheader("🧠 Agent reasoning trace")
-    st.caption("What each agent did, what it retrieved, and how the orchestrator "
-               "weighed the evidence — across every loop iteration.")
+    H(theme.section("Trace", "Agent reasoning, live",
+                    "What each agent did, what it retrieved, and how the "
+                    "orchestrator weighed the evidence — across every loop iteration."))
     if ss.history:
-        st.caption("Attempts so far: " +
-                   " → ".join(f"{h.get('score_pct')}%" for h in ss.history))
+        H(theme.attempts_chips(ss.history))
     if not ss.trace:
-        st.info("Run a learning path to see the agents reason step by step.")
-    for i, step in enumerate(ss.trace, 1):
-        st.markdown(f"**{i}. {step['agent']}**")
-        st.write(step["did"])
-        if step.get("retrieved"):
-            with st.expander(f"📚 Retrieved {len(step['retrieved'])} chunks (Foundry IQ)"):
-                for c in step["retrieved"]:
-                    st.caption(f"`{c['source_id']}` · relevance {c['score']}")
-                    st.write(c["snippet"] + ("…" if len(c["snippet"]) >= 160 else ""))
-        d = step.get("decision_detail")
-        if d:
-            with st.expander("🧩 Reasoning detail"):
-                if d.get("signals_considered"):
-                    st.markdown("**Signals weighed:**")
-                    for s in d["signals_considered"]:
-                        st.markdown(f"- {s}")
-                if d.get("alternatives_rejected"):
-                    st.markdown("**Alternatives rejected:**")
-                    for a in d["alternatives_rejected"]:
-                        st.markdown(f"- {a}")
-                if d.get("guardrail_notes"):
-                    st.markdown("**Deterministic guardrails applied:**")
-                    for g in d["guardrail_notes"]:
-                        st.markdown(f"- ⚙️ {g}")
-        st.divider()
+        H(theme.banner("info", "brain", "Nothing yet",
+                       "Build a learning path to watch the agents reason step by step."))
+    else:
+        H(theme.trace_timeline(ss.trace))

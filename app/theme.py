@@ -230,21 +230,29 @@ h1, h2, h3, h4, .icc-head { font-family: var(--font-head) !important; letter-spa
 /* attempts chips */
 .icc-attempts { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 10px; }
 
-/* hide Streamlit chrome for a user-facing app */
-#MainMenu, header [data-testid="stToolbar"], footer { visibility: hidden; }
+/* trim only the cosmetic Streamlit chrome - keep the header so the sidebar
+   expand/collapse control stays usable (Deploy is hidden via config). */
 [data-testid="stDecoration"] { display: none; }
+footer { visibility: hidden; }
 [data-testid="stHeader"] { background: transparent; }
 
 /* sidebar as a calm panel */
-[data-testid="stSidebar"] { background: #FFFFFF; border-right: 1px solid var(--border); }
-[data-testid="stSidebar"] .block-container { padding-top: 1rem; }
-.icc-brand { font-family: var(--font-head); font-weight: 700; font-size: 1.15rem; color: var(--ink); display:flex; align-items:center; gap:8px; }
-.icc-brand-sub { color: var(--ink-3); font-size: .82rem; margin: 2px 0 8px; }
+[data-testid="stSidebar"] { background: #FFFFFF; border-right: 1px solid var(--border); min-width: 310px; }
+[data-testid="stSidebar"] .block-container { padding-top: 1.2rem; }
+.icc-brand { font-family: var(--font-head); font-weight: 700; font-size: 1.18rem; color: var(--ink); display:flex; align-items:center; gap:8px; }
+.icc-brand-sub { color: var(--ink-3); font-size: .84rem; margin: 3px 0 10px; }
 
-/* tabs */
-[data-baseweb="tab-list"] { gap: 4px; border-bottom: 1px solid var(--border); }
-[data-baseweb="tab"] { font-family: var(--font-head); font-weight: 600; border-radius: 9px 9px 0 0; }
+/* tabs - clear, comfortable, with a solid active underline */
+[data-baseweb="tab-list"] { gap: 8px; border-bottom: 2px solid var(--border); margin-bottom: 10px; }
+[data-baseweb="tab"] {
+  height: 46px; padding: 0 20px; font-family: var(--font-head); font-weight: 600;
+  font-size: 1.02rem; color: var(--ink-3); background: transparent;
+  border-radius: 10px 10px 0 0; transition: background .2s ease, color .2s ease;
+}
+[data-baseweb="tab"]:hover { background: var(--primary-soft); color: var(--primary-deep); }
 [data-baseweb="tab"][aria-selected="true"] { color: var(--primary-deep); }
+[data-baseweb="tab-highlight"] { background: var(--primary) !important; height: 3px; border-radius: 3px; }
+[data-baseweb="tab-border"] { display: none; }
 
 /* audio player (rendered inside an iframe, styles inlined there too) */
 .icc-help { color: var(--ink-3); font-size: .86rem; }

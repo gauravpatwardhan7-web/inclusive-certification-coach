@@ -21,7 +21,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import json as _json
 import re as _re
 import concurrent.futures as _cf
-from datetime import date
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -29,12 +28,11 @@ from src.agents.curator import curate
 from src.agents.study_planner import generate_study_plan
 from src.agents.assessor import generate_assessment, score_assessment
 from src.agents.manager_insights import team_insights, load_team
-from src.agents.calendar_negotiator import negotiate, load_calendar
+from src.agents.calendar_negotiator import negotiate, load_calendar, plan_week
 from src.agents.teachback import evaluate_teachback, to_assessment_result
 from src.agents.advocate import draft_advocacy
 from src.accessibility import to_spoken
 from src.orchestrator import decide
-from src import mastery
 from app import theme
 
 st.set_page_config(page_title="Certification Coach", page_icon="🎓",
@@ -154,18 +152,6 @@ for k, v in {
     ss.setdefault(k, v)
 
 LEARNER_ID = "demo-learner"
-
-
-def record_mastery(per_skill=None, skill=None, score_pct=None):
-    store = mastery.load_store()
-    today = date.today()
-    if per_skill:
-        for entry in per_skill:
-            pct = 100 if entry.get("result") == "correct" else 20
-            mastery.record_review(store, LEARNER_ID, entry.get("skill_area", "?"), pct, today)
-    if skill and score_pct is not None:
-        mastery.record_review(store, LEARNER_ID, skill, score_pct, today)
-    mastery.save_store(store)
 
 
 def log(agent, did, retrieved=None, decision_detail=None):
@@ -317,19 +303,50 @@ with learn_tab:
                     decision_detail={"signals_considered": neg["policy"].get("rationale", []),
                                      "guardrail_notes": neg.get("guardrail_notes", [])})
         if ss.negotiation:
-            neg, stats = ss.negotiation, ss.negotiation["stats"]
-            st.write(neg["negotiation"].get("summary", ""))
-            if neg["scheduled_blocks"]:
-                H(theme.week_grid(load_calendar(neg.get("_calendar_file", "calendar_light_week.json")),
-                                  neg["scheduled_blocks"]))
-            if not neg["feasible"]:
-                H(theme.banner("warn", "alert", "This week is too full for the whole plan",
-                               f"At this pace you'd finish in about "
-                               f"{stats['est_weeks_to_complete_plan']} weeks. Here's a note you "
-                               f"could send your manager:"))
-                H(f'<div class="icc-card">{theme.esc(neg["negotiation"].get("message_to_manager", ""))}</div>')
+            neg = ss.negotiation
+            pol = neg["policy"]
+            cal = load_calendar(neg.get("_calendar_file", "calendar_light_week.json"))
+            st.caption("Your coach suggested a starting fit — adjust it to taste; "
+                       "it re-books instantly.")
+            c1, c2, c3 = st.columns(3)
+            cap = c1.slider("Max study / day (min)", 25, 120,
+                            value=int(pol.get("max_daily_minutes", 50)), step=5)
+            block = c2.slider("Block length (min)", 15, 60,
+                              value=int(pol.get("block_minutes", 25)), step=5)
+            prefer_label = c3.radio("Preferred time",
+                                    ["Any time", "Mornings", "Afternoons"], index=0)
+            prefer = {"Any time": "any", "Mornings": "mornings",
+                      "Afternoons": "afternoons"}[prefer_label]
+            # Pure-code re-plan on every change — no model call, instant.
+            live = plan_week(ss.study_plan, cal, block,
+                             int(pol.get("break_minutes", 5)), cap, prefer)
+            stats = live["stats"]
+            H(theme.tiles([
+                (f"{stats['required_minutes_this_week']}", "min needed"),
+                (f"{stats['available_minutes_this_week']}", "free in your week"),
+                (f"{stats['scheduled_minutes']}", "min booked"),
+                (f"{len(live['scheduled_blocks'])}", "study blocks"),
+            ]))
+            if live["feasible"]:
+                H(theme.banner("ok", "check", "It all fits",
+                               f"Booked every one of the {stats['required_minutes_this_week']} "
+                               f"minutes you need this week."))
+            else:
+                short = stats["unplaced_minutes"]
+                H(theme.banner("warn", "alert", "Not everything fits this week",
+                               f"{short} min couldn't be placed — about "
+                               f"{stats['est_weeks_to_complete_plan']} weeks at this pace. "
+                               f"Try a higher daily cap, shorter blocks, or a different "
+                               f"time of day above."))
+            if live["scheduled_blocks"]:
+                H(theme.week_grid(cal, live["scheduled_blocks"]))
+            # The agent's manager note only makes sense when the calendar itself
+            # is overloaded (the initial run found it infeasible). If YOUR control
+            # tweaks caused the shortfall, the guidance banner above is the fix.
+            if not live["feasible"] and str(neg["negotiation"].get("message_to_manager", "")).strip():
+                H(f'<div class="icc-card">{theme.esc(neg["negotiation"]["message_to_manager"])}</div>')
                 if neg["negotiation"].get("options"):
-                    H(theme.banner("info", "repeat", "Your options",
+                    H(theme.banner("info", "repeat", "Or ask your manager",
                                    "<br>".join("• " + theme.esc(o) for o in neg["negotiation"]["options"])))
 
     # ---- readiness check: only while there's no standing decision ----
@@ -356,7 +373,6 @@ with learn_tab:
                     log("Assessment Agent",
                         f"Scored attempt {attempt_no}: {result.get('score_pct')}% "
                         f"(ready={result.get('ready')}); weak: {result.get('weak_areas') or 'none'}.")
-                    record_mastery(per_skill=result.get("per_skill"))
                     finish_attempt(result, attempt_no, profile, voice_mode)
                 st.rerun()
 
@@ -395,7 +411,6 @@ with learn_tab:
                         fin = ss.tb_final
                         log("Teach-back Assessor",
                             f"Final grade: {fin.get('understanding_pct')}% on '{tb_skill}'.")
-                        record_mastery(skill=tb_skill, score_pct=int(fin.get("understanding_pct", 0)))
                         finish_attempt(to_assessment_result(fin), attempt_no, profile, voice_mode)
                     st.rerun()
 
@@ -426,26 +441,8 @@ with learn_tab:
         if ss.spoken_rec:
             read_aloud_player(ss.spoken_rec, "rec")
 
-    # ---- progress over time ----
+    # ---- ask for support (learner-facing advocacy) ----
     if ss.path:
-        st.divider()
-        H(theme.section("Progress", "What you're remembering",
-                        "Knowledge fades — your coach schedules a quick refresher just "
-                        "before you'd forget. The grey mark is where you last peaked."))
-        rows = mastery.snapshot(mastery.load_store(), LEARNER_ID, date.today())
-        due = [r["skill_area"] for r in rows if r["due_refresher"]]
-        for r in rows:
-            H(theme.memory_bar(r))
-        if due:
-            H(theme.banner("warn", "repeat", "Time for a quick refresher",
-                           theme.esc(" · ".join(due))))
-            if st.button("Refresh these now", use_container_width=True):
-                ss.focus_areas = due
-                log("Memory Tracker", f"{len(due)} skill(s) fading: {due}. Building a refresher.")
-                build_round(cert, role, profile, voice_mode, focus_areas=due)
-                st.rerun()
-
-        # ---- ask for support (learner-facing advocacy) ----
         st.divider()
         H(theme.section("Support", "Need an adjustment?",
                         "Your coach can draft a note to your manager on your behalf. "

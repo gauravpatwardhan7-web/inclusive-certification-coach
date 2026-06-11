@@ -188,20 +188,58 @@ def _allocate(sessions: list[dict], gaps: list[dict], policy: dict) -> tuple[lis
     return scheduled, unplaced
 
 
+def _order_gaps(gaps: list[dict], prefer: str) -> list[dict]:
+    """Order gaps so the learner's time-of-day preference is filled first."""
+    if prefer == "mornings":
+        return sorted(gaps, key=lambda g: (g["start"] >= "12:00", g["date"], g["start"]))
+    if prefer == "afternoons":
+        return sorted(gaps, key=lambda g: (g["start"] < "12:00", g["date"], g["start"]))
+    return sorted(gaps, key=lambda g: (g["date"], g["start"]))
+
+
+def plan_week(study_plan: dict, calendar: dict, block_minutes: int,
+              break_minutes: int, daily_cap: int, prefer: str = "any") -> dict:
+    """
+    Pure, deterministic re-planning for the interactive controls - NO model
+    call. Given explicit pacing controls and a time-of-day preference, find
+    gaps, allocate blocks, and report feasibility. Fast enough to re-run on
+    every slider move.
+    """
+    horizon = len(calendar["days"])
+    sessions = [s for s in study_plan.get("sessions", []) if int(s.get("day", 0)) <= horizon]
+    required = sum(int(s.get("minutes", 0)) for s in sessions)
+    plan_total = sum(int(s.get("minutes", 0)) for s in study_plan.get("sessions", []))
+    gaps = _order_gaps(find_gaps(calendar), prefer)
+    available = sum(g["minutes"] for g in gaps)
+    policy = {"block_minutes": block_minutes, "break_minutes": break_minutes,
+              "max_daily_minutes": daily_cap}
+    scheduled, unplaced = _allocate(sessions, gaps, policy)
+    scheduled_minutes = sum(b["minutes"] for b in scheduled)
+    est_weeks = max(1, -(-plan_total // max(scheduled_minutes, 1)))
+    return {
+        "feasible": not unplaced,
+        "scheduled_blocks": scheduled,
+        "unplaced": unplaced,
+        "policy": policy,
+        "stats": {
+            "required_minutes_this_week": required,
+            "available_minutes_this_week": available,
+            "scheduled_minutes": scheduled_minutes,
+            "unplaced_minutes": sum(u["minutes_unplaced"] for u in unplaced),
+            "plan_total_minutes": plan_total,
+            "est_weeks_to_complete_plan": est_weeks,
+        },
+    }
+
+
 def negotiate(study_plan: dict, calendar: dict,
               accessibility_profile: str = "none") -> dict:
     """
     Book the plan's first week of sessions into the learner's real calendar,
     or produce an evidence-based pushback when the week cannot hold them.
     """
-    horizon = len(calendar["days"])
     sessions = [s for s in study_plan.get("sessions", [])
-                if int(s.get("day", 0)) <= horizon]
-    required = sum(int(s.get("minutes", 0)) for s in sessions)
-    plan_total = sum(int(s.get("minutes", 0)) for s in study_plan.get("sessions", []))
-
-    gaps = find_gaps(calendar)
-    available = sum(g["minutes"] for g in gaps)
+                if int(s.get("day", 0)) <= len(calendar["days"])]
 
     # LLM judgment call #1: the pacing policy for THIS learner.
     policy = chat_json([
@@ -237,22 +275,16 @@ def negotiate(study_plan: dict, calendar: dict,
                      "itself schedules that much per day, and the plan is the "
                      "accommodation authority on daily load")
 
-    # Deterministic allocation: blocks cannot overlap meetings by construction.
-    scheduled, unplaced = _allocate(sessions, gaps, policy)
-    scheduled_minutes = sum(b["minutes"] for b in scheduled)
-    feasible = not unplaced
-
-    weekly_pace = max(scheduled_minutes, 1)
-    est_weeks = max(1, -(-plan_total // weekly_pace))  # ceil division
-
-    stats = {
-        "required_minutes_this_week": required,
-        "available_minutes_this_week": available,
-        "scheduled_minutes": scheduled_minutes,
-        "unplaced_minutes": sum(u["minutes_unplaced"] for u in unplaced),
-        "plan_total_minutes": plan_total,
-        "est_weeks_to_complete_plan": est_weeks,
-    }
+    # Deterministic allocation via the shared planner (blocks cannot overlap
+    # meetings by construction). plan_week is the same code the interactive
+    # controls call, so the agent's booking and the learner's tweaks agree.
+    result = plan_week(study_plan, calendar, policy["block_minutes"],
+                       policy["break_minutes"], policy["max_daily_minutes"])
+    scheduled, unplaced = result["scheduled_blocks"], result["unplaced"]
+    stats, feasible = result["stats"], result["feasible"]
+    required = stats["required_minutes_this_week"]
+    available = stats["available_minutes_this_week"]
+    est_weeks = stats["est_weeks_to_complete_plan"]
 
     # LLM judgment call #2: the honest negotiation narrative.
     negotiation = chat_json([

@@ -230,9 +230,24 @@ h1, h2, h3, h4, .icc-head { font-family: var(--font-head) !important; letter-spa
 /* attempts chips */
 .icc-attempts { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 10px; }
 
-@media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
-}
+/* hide Streamlit chrome for a user-facing app */
+#MainMenu, header [data-testid="stToolbar"], footer { visibility: hidden; }
+[data-testid="stDecoration"] { display: none; }
+[data-testid="stHeader"] { background: transparent; }
+
+/* sidebar as a calm panel */
+[data-testid="stSidebar"] { background: #FFFFFF; border-right: 1px solid var(--border); }
+[data-testid="stSidebar"] .block-container { padding-top: 1rem; }
+.icc-brand { font-family: var(--font-head); font-weight: 700; font-size: 1.15rem; color: var(--ink); display:flex; align-items:center; gap:8px; }
+.icc-brand-sub { color: var(--ink-3); font-size: .82rem; margin: 2px 0 8px; }
+
+/* tabs */
+[data-baseweb="tab-list"] { gap: 4px; border-bottom: 1px solid var(--border); }
+[data-baseweb="tab"] { font-family: var(--font-head); font-weight: 600; border-radius: 9px 9px 0 0; }
+[data-baseweb="tab"][aria-selected="true"] { color: var(--primary-deep); }
+
+/* audio player (rendered inside an iframe, styles inlined there too) */
+.icc-help { color: var(--ink-3); font-size: .86rem; }
 </style>
 """
 

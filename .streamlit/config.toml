@@ -4,6 +4,11 @@ primaryColor = "#2563EB"
 backgroundColor = "#F7F9FC"
 secondaryBackgroundColor = "#FFFFFF"
 textColor = "#0F172A"
+font = "sans serif"
+
+[client]
+# Hide the Deploy button and developer menu — this is a user-facing app.
+toolbarMode = "minimal"
 
 [browser]
 gatherUsageStats = false

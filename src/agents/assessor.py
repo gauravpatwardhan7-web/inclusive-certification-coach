@@ -14,17 +14,29 @@ from src.foundry_client import chat_json
 from src.retrieval import retrieve_with_context
 
 GENERATE_PROMPT = """You are the Assessment Agent in an accessibility-first \
-enterprise certification system.
+enterprise certification system. You write REALISTIC practice exam questions
+that test whether a learner understands a skill area well enough to pass the
+certification.
 
-Generate practice questions grounded ONLY in the provided knowledge base.
+Each question must test one of the skill areas named in the knowledge base,
+but the QUESTION ITSELF should be a genuine, practical exam-style question
+about that area's concepts, services, and best practices - the kind that
+appears on the real certification.
 
 Hard rules:
-- Each question must test a skill area that appears in the knowledge base.
+- Test real understanding of the skill area (what a service does, when to use
+  it, how it works). Write the kind of question a certification exam asks.
+- NEVER ask about the study guide's metadata: do NOT ask how many study hours
+  are recommended, what a skill area's exam weight/percentage is, how many
+  modules there are, or anything about the guide document itself. Those are
+  not exam topics - they are trivia about our planning doc.
 - If the request lists FOCUS AREAS, every question must test one of those
   skill areas - this is a remediation retake.
-- Each question must include the correct answer and the "source_id" it came from.
+- Anchor each question to the skill area it covers and set "source_id" to the
+  knowledge-base source for that skill area.
+- One clearly correct option and three plausible distractors.
 - Use plain, screen-reader-friendly language. No images, no "see figure".
-- Do not invent facts beyond the knowledge base.
+- Keep questions factually correct and uncontroversial for the technology.
 
 Output ONLY valid JSON:
 {

@@ -76,6 +76,15 @@ CSS = """
 html, body, [data-testid="stAppViewContainer"] * { font-family: var(--font-body); }
 h1, h2, h3, h4, .icc-head { font-family: var(--font-head) !important; letter-spacing: -0.01em; }
 
+/* The global font rule above must NOT clobber Streamlit's Material icon font,
+   or icons (sidebar collapse, expanders, help tooltips) render as their raw
+   ligature names like "keyboard_double_arrow_left". Restore the icon font. */
+[data-testid="stIconMaterial"], span.material-symbols-rounded,
+span.material-symbols-outlined, span.material-icons {
+  font-family: 'Material Symbols Rounded', 'Material Symbols Outlined',
+               'Material Icons' !important;
+}
+
 [data-testid="stAppViewContainer"] { background: var(--bg); }
 .block-container { padding-top: 1.2rem; max-width: 1240px; }
 

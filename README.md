@@ -15,11 +15,22 @@ The challenge scenario is an enterprise certification-learning system. Most impl
 
 ---
 
+## Links
+
+- **Demo video (≤ 5 min):** https://youtu.be/aNrbi3qeOe0
+- **Submission (Agents League — Reasoning Agents):** https://innovationstudio.microsoft.com/hackathons/Agents-League-Hackathon/project/123869
+- **Architecture diagram:** [`docs/architecture.svg`](docs/architecture.svg) — shown below
+
+---
+
 ## Architecture
 
-Seven agents: five in the per-learner reasoning loop, plus a team-level
-Manager Insights agent, plus the Accessibility Narrator rendering layer —
-and a deterministic memory-decay model underneath.
+![Architecture diagram — Inclusive Certification Coach on Microsoft Foundry](docs/architecture.svg)
+
+Eight cooperating agents — six in the per-learner reasoning loop (Curator,
+Study Plan, Calendar Negotiator, Assessment, Teach-back, Orchestrator), a
+team-level Manager Insights agent, and an Advocate — plus an Accessibility
+Narrator rendering layer.
 
 | Agent | Type | Job | Grounding |
 |---|---|---|---|

@@ -1,0 +1,217 @@
+1
+00:00:00,000 --> 00:00:04,500
+This is the Inclusive Certification Coach —
+an accessibility-first learning coach for enterprise teams.
+
+2
+00:00:04,500 --> 00:00:09,500
+It's built as eight cooperating agents, grounded in
+Microsoft Foundry IQ, with every claim cited.
+
+3
+00:00:09,500 --> 00:00:15,000
+The clean landing page invites the learner
+to set a goal and build a plan.
+
+4
+00:00:15,000 --> 00:00:20,000
+Three tabs sit at the top:
+Learn, Manager view, and How it works.
+
+5
+00:00:20,000 --> 00:00:25,000
+In the sidebar I pick my certification — AZ-204 —
+my role, and how I work best.
+
+6
+00:00:25,000 --> 00:00:28,000
+I note ADHD and trouble focusing,
+then choose Build my plan.
+
+7
+00:00:28,000 --> 00:00:34,500
+The Curator retrieves grounded content
+and builds a cited learning path.
+
+8
+00:00:34,500 --> 00:00:41,500
+Each module shows recommended hours,
+an accommodation note, and its source citation.
+
+9
+00:00:41,500 --> 00:00:48,500
+Behind it, the Study Plan Generator schedules
+short, focus-friendly blocks with breaks.
+
+10
+00:00:48,500 --> 00:00:55,000
+Every step is grounded in retrieved knowledge-base
+chunks — no hallucinated facts.
+
+11
+00:00:55,000 --> 00:01:01,000
+With Listen mode on, the Accessibility Narrator
+turns the result into a spoken script.
+
+12
+00:01:01,000 --> 00:01:07,000
+There's a real player — play, pause,
+choose a voice, and adjust the speed.
+
+13
+00:01:07,000 --> 00:01:11,000
+Symbols and abbreviations are read as words,
+so it's screen-reader friendly.
+
+14
+00:01:11,000 --> 00:01:17,000
+Next, the Calendar Negotiator fits
+study into my real week.
+
+15
+00:01:17,000 --> 00:01:23,000
+It finds genuine gaps between meetings
+and books study blocks into them.
+
+16
+00:01:23,000 --> 00:01:29,000
+I can adjust the daily cap, block length,
+and preferred time — it re-books instantly.
+
+17
+00:01:29,000 --> 00:01:36,000
+If the week is too full, it pushes back with
+evidence instead of pretending it fits.
+
+18
+00:01:36,000 --> 00:01:42,000
+Now the readiness check —
+and I choose how I'm tested.
+
+19
+00:01:42,000 --> 00:01:48,000
+I can pick exactly which topics
+to be quizzed on, and how many questions.
+
+20
+00:01:48,000 --> 00:01:55,000
+The questions are realistic, exam-style
+scenarios — not trivia about the guide.
+
+21
+00:01:55,000 --> 00:02:02,000
+Or I can switch to Teach-it-back and
+explain a concept in my own words.
+
+22
+00:02:02,000 --> 00:02:09,000
+It grades my understanding, names what
+I covered, and flags what's missing.
+
+23
+00:02:09,000 --> 00:02:16,000
+Then it asks one Socratic follow-up
+aimed at the biggest gap.
+
+24
+00:02:16,000 --> 00:02:24,000
+Let me answer the quick questions
+and submit them.
+
+25
+00:02:24,000 --> 00:02:32,000
+The Assessment Agent scores me
+and reports my weak areas.
+
+26
+00:02:32,000 --> 00:02:40,000
+Then the Orchestrator reasons over my
+score, weak areas, and attempt history.
+
+27
+00:02:40,000 --> 00:02:48,000
+It decides one of three actions: advance,
+loop back, or escalate to a human.
+
+28
+00:02:48,000 --> 00:02:56,000
+Here it loops me back — to study
+only the areas I got wrong.
+
+29
+00:02:56,000 --> 00:03:03,000
+One click starts a focused refresher,
+re-quizzing just those topics.
+
+30
+00:03:03,000 --> 00:03:06,000
+The loop is real reasoning,
+not a fixed script.
+
+31
+00:03:06,000 --> 00:03:13,000
+If I need support, the Advocate drafts
+a note to my manager for me.
+
+32
+00:03:13,000 --> 00:03:21,000
+I choose whether to share my accessibility
+profile — it's private by default.
+
+33
+00:03:21,000 --> 00:03:29,000
+Redaction is enforced in code, so the
+model can't leak what it never saw.
+
+34
+00:03:29,000 --> 00:03:36,000
+The draft shows exactly what it shares
+and what it keeps private.
+
+35
+00:03:36,000 --> 00:03:40,000
+Nothing is sent without my approval.
+
+36
+00:03:40,000 --> 00:03:47,000
+The Manager view rolls the whole team
+up for a people manager.
+
+37
+00:03:47,000 --> 00:03:54,000
+Manager Insights reasons over each learner's
+progress against the readiness threshold.
+
+38
+00:03:54,000 --> 00:04:00,000
+Profiles of learners who haven't opted in
+stay redacted here too.
+
+39
+00:04:00,000 --> 00:04:07,000
+Finally, How it works
+makes the reasoning legible.
+
+40
+00:04:07,000 --> 00:04:14,000
+It logs every agent step, the chunks it
+retrieved, and their relevance scores.
+
+41
+00:04:14,000 --> 00:04:22,000
+And it shows the orchestrator's signals
+weighed and alternatives rejected.
+
+42
+00:04:22,000 --> 00:04:30,000
+Deterministic guardrails keep it safe —
+stalled learners always reach a human.
+
+43
+00:04:30,000 --> 00:04:37,000
+Grounded, reliable, and accessibility-first —
+backed by 72 of 72 eval checks.
+
+44
+00:04:37,000 --> 00:04:39,000
+Thanks for watching.

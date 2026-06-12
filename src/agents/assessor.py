@@ -78,18 +78,19 @@ def generate_assessment(certification: str, role: str, num_questions: int = 3,
         query += " " + " ".join(focus_areas)
     kb, chunks = retrieve_with_context(query)
 
-    focus_block = ""
     if focus_areas:
         focus_block = (
-            "FOCUS AREAS (remediation retake - test ONLY these):\n- "
+            "FOCUS AREAS (test ONLY these skill areas):\n- "
             + "\n- ".join(focus_areas) + "\n\n"
         )
-    user_msg = (
-        f"KNOWLEDGE BASE:\n{kb}\n\n"
-        f"{focus_block}"
-        f"Generate {num_questions} questions for certification {certification} "
-        f"(role: {role}). Cover different skill areas. JSON only."
-    )
+        ask = (f"Generate {num_questions} questions. EVERY question must test one of "
+               f"the FOCUS AREAS listed above and NONE of the other skill areas. "
+               f"Spread the questions across the focus areas. JSON only.")
+    else:
+        focus_block = ""
+        ask = (f"Generate {num_questions} questions for certification {certification} "
+               f"(role: {role}). Cover different skill areas. JSON only.")
+    user_msg = f"KNOWLEDGE BASE:\n{kb}\n\n{focus_block}{ask}"
     assessment = chat_json([
         {"role": "system", "content": GENERATE_PROMPT},
         {"role": "user", "content": user_msg},

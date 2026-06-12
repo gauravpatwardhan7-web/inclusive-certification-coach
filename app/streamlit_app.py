@@ -358,6 +358,25 @@ with learn_tab:
                         ["Quick questions", "Explain it in your own words"],
                         horizontal=True)
 
+        if mode.startswith("Quick"):
+            skills = [m.get("skill_area", "?") for m in ss.path["modules"]]
+            cta, ctb = st.columns([3, 1])
+            topics = cta.multiselect("Topics to quiz me on", skills, default=skills,
+                                     help="Narrow the quiz to the areas you want to "
+                                          "practice. Leave all selected for a full check.")
+            n_q = ctb.selectbox("Questions", [3, 5, 8], index=0)
+            if st.button("Generate my questions"):
+                chosen = topics or skills
+                focus = None if set(chosen) == set(skills) else chosen
+                with st.spinner("Writing your questions…"):
+                    ss.assessment = generate_assessment(cert, role, num_questions=n_q,
+                                                        focus_areas=focus)
+                    log("Assessment Agent",
+                        f"Wrote {len(ss.assessment.get('questions', []))} questions on "
+                        f"{', '.join(chosen)}.",
+                        retrieved=ss.assessment.get("_retrieval"))
+                st.rerun()
+
         if mode.startswith("Quick") and ss.assessment and ss.assessment.get("questions"):
             answers = {}
             for q in ss.assessment["questions"]:
